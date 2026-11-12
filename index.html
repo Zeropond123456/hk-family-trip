@@ -12,6 +12,11 @@
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Leaflet CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
     <script>
         tailwind.config = {
             theme: {
@@ -98,46 +103,97 @@
         ::-webkit-scrollbar-track { background: #FFF9E6; border-left: 2px solid #1A1A1A; }
         ::-webkit-scrollbar-thumb { background: #FF4B4B; border: 2px solid #1A1A1A; border-radius: 5px; }
 
-        .chat-bubble {
-            position: relative;
-            background: #fff;
+        /* --- PRO ADVENTURE MAP STYLES --- */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(12px);
             border: 2px solid #1A1A1A;
-            border-radius: 12px;
-            padding: 10px;
+            box-shadow: 4px 4px 0px 0px #1A1A1A;
         }
-        .chat-bubble:after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 50%;
-            width: 0;
-            height: 0;
-            border: 10px solid transparent;
-            border-top-color: #1A1A1A;
-            border-bottom: 0;
-            margin-left: -10px;
-            margin-bottom: -10px;
+
+        .waypoint-pulse {
+            animation: pulse-glow 2s infinite;
+        }
+        
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 0 0 rgba(var(--rgb-color), 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(var(--rgb-color), 0); }
+            100% { box-shadow: 0 0 0 0 rgba(var(--rgb-color), 0); }
+        }
+        
+        /* Leaflet Overrides */
+        .leaflet-popup-content-wrapper {
+            border-radius: 12px;
+            border: 2px solid #1A1A1A;
+            box-shadow: 4px 4px 0px 0px #1A1A1A;
+        }
+        .leaflet-popup-tip {
+            border-top: 2px solid #1A1A1A;
+            border-left: 2px solid #1A1A1A;
+        }
+        .leaflet-div-icon {
+            background: transparent;
+            border: none;
+        }
+        
+        /* Fix map container height */
+        #real-map {
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+        }
+
+        /* Language Switcher Styles */
+        [data-lang="th"] .lang-en, [data-lang="th"] .lang-yue { display: none !important; }
+        [data-lang="en"] .lang-th, [data-lang="en"] .lang-yue { display: none !important; }
+        [data-lang="yue"] .lang-th, [data-lang="yue"] .lang-en { display: none !important; }
+        
+        .food-card {
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        .food-card:hover {
+            transform: translateY(-5px) rotate(1deg);
+            box-shadow: 8px 8px 0px 0px #1A1A1A;
+        }
+        
+        /* Hide UI on print */
+        @media print {
+            .no-print { display: none !important; }
+            .comic-border { box-shadow: none !important; border-width: 1px !important; }
         }
     </style>
 </head>
-<body class="font-kanit pb-32">
+<body class="font-kanit pb-32" data-lang="th">
 
-    <div id="capture-area" class="max-w-5xl mx-auto p-4 sm:p-6 bg-hkCream relative">
+    <!-- Floating Language Switcher -->
+    <div class="fixed top-4 right-4 z-[1000] glass-panel px-3 py-2 rounded-xl flex items-center gap-2 no-print">
+        <span class="text-xl">🌐</span>
+        <select onchange="changeLanguage(this.value)" class="bg-transparent font-mali font-bold outline-none cursor-pointer text-sm sm:text-base">
+            <option value="th">ไทย</option>
+            <option value="en">English</option>
+            <option value="yue">廣東話</option>
+        </select>
+    </div>
+
+    <div id="capture-area" class="max-w-5xl mx-auto p-4 sm:p-6 bg-hkCream relative mt-12 sm:mt-0">
         
         <!-- Header Section -->
         <header class="text-center mb-10 relative">
             <div class="inline-block bg-hkRed text-white px-8 py-4 comic-border rotate-[-2deg] mb-4">
                 <h1 class="font-mali text-3xl sm:text-5xl font-bold tracking-wide" contenteditable="true">
-                    🥟 ทริปครอบครัวตะลุยฮ่องกง 2026 🏮
+                    <span class="lang-th">🥟 ทริปครอบครัวตะลุยฮ่องกง 2026 🏮</span>
+                    <span class="lang-en">🥟 HK Family Adventure 2026 🏮</span>
+                    <span class="lang-yue">🥟 2026 香港家庭探險之旅 🏮</span>
                 </h1>
             </div>
             <div class="flex flex-wrap justify-center gap-4 text-lg font-mali font-semibold">
                 <span class="bg-hkNeonBlue px-4 py-2 comic-border" contenteditable="true">📅 18-21 พฤศจิกายน 2026</span>
-                <span class="bg-hkNeonYellow px-4 py-2 comic-border" contenteditable="true">👨‍👩‍👧‍👦 ผู้ใหญ่ 2 | วัยรุ่น 2</span>
+                <span class="bg-hkNeonYellow px-4 py-2 comic-border" contenteditable="true">
+                    <span class="lang-th">👨‍👩‍👧‍👦 ผู้ใหญ่ 2 | วัยรุ่น 2</span>
+                    <span class="lang-en">👨‍👩‍👧‍👦 2 Adults | 2 Teens</span>
+                    <span class="lang-yue">👨‍👩‍👧‍👦 2 成人 | 2 青年</span>
+                </span>
             </div>
-            <!-- Decorative Elements -->
-            <div class="absolute top-0 left-0 text-5xl animate-bounce hidden sm:block">🚋</div>
-            <div class="absolute top-0 right-0 text-5xl animate-pulse hidden sm:block">🥡</div>
         </header>
 
         <!-- Top Area: Widgets -->
@@ -146,7 +202,7 @@
             <!-- Checklist -->
             <div class="bg-white p-5 comic-border">
                 <h2 class="font-mali text-xl font-bold mb-3 flex items-center gap-2 border-b-2 border-black pb-2 text-hkRed">
-                    🎒 สิ่งที่ห้ามลืมเด็ดขาด!
+                    🎒 <span class="lang-th">สิ่งที่ห้ามลืมเด็ดขาด!</span><span class="lang-en">Must Not Forget!</span><span class="lang-yue">切勿忘記！</span>
                 </h2>
                 <ul id="checklist" class="space-y-2 font-medium">
                     <!-- JS will populate this -->
@@ -156,36 +212,36 @@
             <!-- Budget Calculator -->
             <div class="bg-white p-5 comic-border">
                 <h2 class="font-mali text-xl font-bold mb-3 flex items-center gap-2 border-b-2 border-black pb-2 text-green-600">
-                    💰 งบประมาณครอบครัว
+                    💰 <span class="lang-th">งบประมาณครอบครัว</span><span class="lang-en">Family Budget</span><span class="lang-yue">家庭預算</span>
                 </h2>
                 <div class="space-y-2 text-sm" id="budget-form">
                     <div class="flex justify-between items-center">
-                        <span>✈️ ค่าตั๋วเครื่องบิน:</span>
-                        <input type="number" id="b-flight" class="w-24 border-2 border-black rounded p-1 text-right bg-gray-50" value="25000" onchange="calculateBudget()">
+                        <span><span class="lang-th">✈️ ค่าตั๋วเครื่องบิน:</span><span class="lang-en">✈️ Flights:</span><span class="lang-yue">✈️ 機票:</span></span>
+                        <input type="number" id="b-flight" class="w-24 border-2 border-black rounded p-1 text-right bg-gray-50 font-bold" value="25000" onchange="calculateBudget()">
                     </div>
                     <div class="flex justify-between items-center">
-                        <span>🏨 ค่าที่พัก:</span>
-                        <input type="number" id="b-hotel" class="w-24 border-2 border-black rounded p-1 text-right bg-gray-50" value="15000" onchange="calculateBudget()">
+                        <span><span class="lang-th">🏨 ค่าที่พัก:</span><span class="lang-en">🏨 Hotel:</span><span class="lang-yue">🏨 住宿:</span></span>
+                        <input type="number" id="b-hotel" class="w-24 border-2 border-black rounded p-1 text-right bg-gray-50 font-bold" value="15000" onchange="calculateBudget()">
                     </div>
                     <div class="flex justify-between items-center">
-                        <span>🍜 ค่ากิน:</span>
-                        <input type="number" id="b-food" class="w-24 border-2 border-black rounded p-1 text-right bg-gray-50" value="12000" onchange="calculateBudget()">
+                        <span><span class="lang-th">🍜 ค่ากิน:</span><span class="lang-en">🍜 Food:</span><span class="lang-yue">🍜 飲食:</span></span>
+                        <input type="number" id="b-food" class="w-24 border-2 border-black rounded p-1 text-right bg-gray-50 font-bold" value="12000" onchange="calculateBudget()">
                     </div>
                     <div class="flex justify-between items-center">
-                        <span>🛍️ ช้อปปิ้ง & อื่นๆ:</span>
-                        <input type="number" id="b-shop" class="w-24 border-2 border-black rounded p-1 text-right bg-gray-50" value="20000" onchange="calculateBudget()">
+                        <span><span class="lang-th">🛍️ ช้อปปิ้ง & อื่นๆ:</span><span class="lang-en">🛍️ Shopping:</span><span class="lang-yue">🛍️ 購物:</span></span>
+                        <input type="number" id="b-shop" class="w-24 border-2 border-black rounded p-1 text-right bg-gray-50 font-bold" value="20000" onchange="calculateBudget()">
                     </div>
                 </div>
                 <div class="mt-3 pt-2 border-t-2 border-dashed border-black flex justify-between items-center font-bold text-lg font-mali">
-                    <span>รวมทั้งหมด:</span>
+                    <span><span class="lang-th">รวมทั้งหมด:</span><span class="lang-en">Total:</span><span class="lang-yue">總計:</span></span>
                     <span id="b-total" class="text-hkRed">72,000 ฿</span>
                 </div>
             </div>
 
             <!-- Weather Widget -->
             <div class="bg-hkNeonBlue p-5 comic-border flex flex-col justify-center items-center text-center">
-                <h2 class="font-mali text-xl font-bold mb-2">🌤️ อากาศฮ่องกงตอนนี้</h2>
-                <div id="weather-display" class="animate-pulse font-mali font-bold text-gray-700">กำลังโหลด...</div>
+                <h2 class="font-mali text-xl font-bold mb-2">🌤️ <span class="lang-th">อากาศฮ่องกงตอนนี้</span><span class="lang-en">HK Weather Now</span><span class="lang-yue">香港即時天氣</span></h2>
+                <div id="weather-display" class="animate-pulse font-mali font-bold text-gray-700"><span class="lang-th">กำลังโหลด...</span><span class="lang-en">Loading...</span><span class="lang-yue">加載中...</span></div>
                 <div class="text-xs mt-2 font-medium opacity-80">(Real-time from Open-Meteo)</div>
             </div>
         </div>
@@ -193,158 +249,721 @@
         <!-- Middle Area: Itinerary -->
         <div class="mb-10">
             <!-- Tabs -->
-            <div class="flex flex-wrap gap-2 mb-4 justify-center" id="day-tabs">
-                <button onclick="switchDay('day1')" id="btn-day1" class="comic-btn bg-hkRed text-white px-6 py-2 font-mali font-bold active-tab">Day 1 (18 Nov)</button>
-                <button onclick="switchDay('day2')" id="btn-day2" class="comic-btn bg-white text-black px-6 py-2 font-mali font-bold">Day 2 (19 Nov)</button>
-                <button onclick="switchDay('day3')" id="btn-day3" class="comic-btn bg-white text-black px-6 py-2 font-mali font-bold">Day 3 (20 Nov)</button>
-                <button onclick="switchDay('day4')" id="btn-day4" class="comic-btn bg-white text-black px-6 py-2 font-mali font-bold">Day 4 (21 Nov)</button>
+            <div class="flex flex-wrap gap-2 mb-4 justify-center no-print" id="day-tabs">
+                <button onclick="switchDay('day1')" id="btn-day1" class="comic-btn bg-hkRed text-white px-6 py-2 font-mali font-bold">Day 1</button>
+                <button onclick="switchDay('day2')" id="btn-day2" class="comic-btn bg-white text-black px-6 py-2 font-mali font-bold">Day 2</button>
+                <button onclick="switchDay('day3')" id="btn-day3" class="comic-btn bg-white text-black px-6 py-2 font-mali font-bold">Day 3</button>
+                <button onclick="switchDay('day4')" id="btn-day4" class="comic-btn bg-white text-black px-6 py-2 font-mali font-bold">Day 4</button>
+                <button onclick="switchDay('food')" id="btn-food" class="comic-btn bg-white text-black px-6 py-2 font-mali font-bold border-dashed border-hkRed border-4 hover:bg-red-50">
+                    <span class="lang-th">🍜 ลายแทงของกิน</span>
+                    <span class="lang-en">🍜 Food Guide</span>
+                    <span class="lang-yue">🍜 美食指南</span>
+                </button>
+                <button onclick="switchDay('map')" id="btn-map" class="comic-btn bg-white text-black px-6 py-2 font-mali font-bold border-dashed border-hkNeonBlue border-4 hover:bg-cyan-50">
+                    <span class="lang-th">🗺️ แผนที่ผจญภัย</span>
+                    <span class="lang-en">🗺️ Adv. Map</span>
+                    <span class="lang-yue">🗺️ 探險地圖</span>
+                </button>
             </div>
 
             <!-- Timeline Container -->
             <div class="bg-white p-6 sm:p-8 comic-border relative">
-                <div class="absolute top-4 right-4 text-xs bg-hkNeonYellow px-2 py-1 rounded border-2 border-black font-bold rotate-3">
+                <div class="absolute top-4 right-4 text-xs bg-hkNeonYellow px-2 py-1 rounded border-2 border-black font-bold rotate-3 no-print" id="edit-hint">
                     ✏️ คลิกที่ข้อความหรือรูปเพื่อแก้ไข
                 </div>
-                <div class="timeline-line hidden sm:block ml-4 sm:ml-0"></div>
-                <div id="timeline-content" class="space-y-8 relative z-10 pl-8 sm:pl-12">
-                    <!-- JS will populate timeline here based on active day -->
+                
+                <!-- Normal Timeline Content -->
+                <div id="timeline-wrapper">
+                    <div class="timeline-line hidden sm:block ml-4 sm:ml-0"></div>
+                    <div id="timeline-content" class="space-y-8 relative z-10 pl-8 sm:pl-12">
+                        <!-- JS will populate timeline here based on active day -->
+                    </div>
+
+                    <div class="mt-8 text-center no-print">
+                        <button onclick="addPlan()" class="comic-btn bg-hkNeonYellow px-6 py-3 font-mali font-bold text-lg hover:bg-yellow-300">
+                            ➕ <span class="lang-th">เพิ่มแพลนเที่ยว</span><span class="lang-en">Add Plan</span><span class="lang-yue">新增行程</span>
+                        </button>
+                    </div>
                 </div>
 
-                <div class="mt-8 text-center">
-                    <button onclick="addPlan()" class="comic-btn bg-hkNeonYellow px-6 py-3 font-mali font-bold text-lg hover:bg-yellow-300">
-                        ➕ เพิ่มแพลนเที่ยว
-                    </button>
+                <!-- Interactive Adventure Map -->
+                <div id="map-wrapper" class="hidden relative w-full h-[600px] border-4 border-black rounded-2xl overflow-hidden bg-white p-1">
+                    
+                    <!-- Glassmorphism Controls -->
+                    <div class="absolute top-4 left-4 z-[500] glass-panel p-3 rounded-xl text-black font-kanit text-sm flex flex-col gap-2 min-w-[150px]">
+                        <h3 class="font-mali font-bold text-base border-b border-black pb-1">🗺️ <span class="lang-th">เลือกวันเดินทาง</span><span class="lang-en">Select Day</span><span class="lang-yue">選擇天數</span></h3>
+                        <label class="flex items-center gap-2 cursor-pointer font-bold" style="color:#FF4B4B">
+                            <input type="checkbox" checked onchange="toggleLeafletLayer('day1')" class="w-4 h-4" id="cb-day1"> Day 1
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer font-bold" style="color:#4CAF50">
+                            <input type="checkbox" checked onchange="toggleLeafletLayer('day2')" class="w-4 h-4" id="cb-day2"> Day 2
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer font-bold" style="color:#00E5FF">
+                            <input type="checkbox" checked onchange="toggleLeafletLayer('day3')" class="w-4 h-4" id="cb-day3"> Day 3
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer font-bold" style="color:#9C27B0">
+                            <input type="checkbox" checked onchange="toggleLeafletLayer('day4')" class="w-4 h-4" id="cb-day4"> Day 4
+                        </label>
+                    </div>
+
+                    <!-- Real Map Container -->
+                    <div id="real-map" class="rounded-xl"></div>
+                        
                 </div>
+
+                <!-- Interactive Food Guide Infographic -->
+                <div id="food-wrapper" class="hidden w-full bg-white p-6 sm:p-8 comic-border rounded-2xl relative">
+                    <div class="text-center mb-8">
+                        <h2 class="inline-block font-mali text-3xl font-bold bg-hkNeonYellow px-6 py-2 rounded-full border-4 border-black shadow-[4px_4px_0_0_#1A1A1A] rotate-[-1deg]">
+                            <span class="lang-th">😋 ลายแทงของอร่อยเด็ด!</span>
+                            <span class="lang-en">😋 Must-Eat Food Guide!</span>
+                            <span class="lang-yue">😋 必吃美食指南！</span>
+                        </h2>
+                        <p class="mt-4 font-bold text-gray-600">
+                            <span class="lang-th">รวบรวมร้านเด็ดแยกตามย่าน พร้อมพิกัดแผนที่ ห้ามพลาดเด็ดขาด!</span>
+                            <span class="lang-en">Curated list of restaurants by district with map links!</span>
+                            <span class="lang-yue">按地區分類的精選餐廳，附有地圖連結！</span>
+                        </p>
+                    </div>
+
+                    <!-- Category 1: TST & Jordan -->
+                    <h3 class="w-full font-mali font-bold text-2xl text-hkDark mb-4 border-b-4 border-blue-400 pb-2 mt-4">📍 ย่าน Tsim Sha Tsui & Jordan (เกาลูนใต้)</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+                        
+                        <div class="bg-cyan-50 p-5 comic-border food-card relative border-cyan-500 border-4">
+                            <div class="absolute -top-5 -right-5 text-5xl">🥛</div>
+                            <h3 class="font-bold text-xl text-cyan-700 font-mali mb-1">Australia Dairy Co.</h3>
+                            <div class="flex flex-wrap items-center gap-2 mb-3">
+                                <p class="text-xs font-bold bg-black text-white px-2 py-1 rounded">📍 Jordan</p>
+                                <a href="https://www.google.com/maps/search/?api=1&query=Australia+Dairy+Company+Hong+Kong" target="_blank" class="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 transition">🗺️ แผนที่</a>
+                            </div>
+                            <p class="text-sm font-medium">
+                                <span class="lang-th">พุดดิ้งนมตุ๋นในตำนาน และไข่กวนเนื้อเนียนนุ่ม คิวอาจจะยาวแต่รันคิวเร็วมาก!</span>
+                                <span class="lang-en">Legendary steamed milk pudding and fluffy scrambled eggs. Fast queue!</span>
+                                <span class="lang-yue">傳奇燉奶及香滑炒蛋，排隊快，必試！</span>
+                            </p>
+                        </div>
+
+                        <div class="bg-purple-50 p-5 comic-border food-card relative border-purple-500 border-4">
+                            <div class="absolute -top-5 -right-5 text-5xl">🥣</div>
+                            <h3 class="font-bold text-xl text-purple-700 font-mali mb-1">Cheung Hing Kee</h3>
+                            <div class="flex flex-wrap items-center gap-2 mb-3">
+                                <p class="text-xs font-bold bg-black text-white px-2 py-1 rounded">📍 TST</p>
+                                <a href="https://www.google.com/maps/search/?api=1&query=Cheung+Hing+Kee+Shanghai+Pan-fried+Buns+Tsim+Sha+Tsui" target="_blank" class="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 transition">🗺️ แผนที่</a>
+                            </div>
+                            <p class="text-sm font-medium">
+                                <span class="lang-th">เสี่ยวหลงเปาทอด (Sheng Jian Bao) ระดับมิชลิน น้ำซุปทะลัก กรอบนอกนุ่มใน (ระวังลวกปาก!)</span>
+                                <span class="lang-en">Michelin-recommended pan-fried Sheng Jian Bao. Crispy and juicy!</span>
+                                <span class="lang-yue">米芝蓮推介生煎包，外脆內爆汁，小心燙口！</span>
+                            </p>
+                        </div>
+
+                        <div class="bg-yellow-50 p-5 comic-border food-card relative border-yellow-400 border-4">
+                            <div class="absolute -top-5 -right-5 text-5xl">🧇</div>
+                            <h3 class="font-bold text-xl text-yellow-700 font-mali mb-1">Mammy Pancake</h3>
+                            <div class="flex flex-wrap items-center gap-2 mb-3">
+                                <p class="text-xs font-bold bg-black text-white px-2 py-1 rounded">📍 TST</p>
+                                <a href="https://www.google.com/maps/search/?api=1&query=Mammy+Pancake+Tsim+Sha+Tsui" target="_blank" class="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 transition">🗺️ แผนที่</a>
+                            </div>
+                            <p class="text-sm font-medium">
+                                <span class="lang-th">วาฟเฟิลฮ่องกง (Gai Daan Jai) มิชลินไกด์ กรอบนอกนุ่มใน มีหลายรสชาติให้เลือก</span>
+                                <span class="lang-en">Michelin-guide HK egg waffles. Crispy outside, soft inside with many flavors.</span>
+                                <span class="lang-yue">米芝蓮推介雞蛋仔，外脆內軟，多種口味。</span>
+                            </p>
+                        </div>
+
+                        <div class="bg-gray-50 p-5 comic-border food-card relative border-gray-500 border-4">
+                            <div class="absolute -top-5 -right-5 text-5xl">🍧</div>
+                            <h3 class="font-bold text-xl text-gray-700 font-mali mb-1">Kai Kai Dessert</h3>
+                            <div class="flex flex-wrap items-center gap-2 mb-3">
+                                <p class="text-xs font-bold bg-black text-white px-2 py-1 rounded">📍 Jordan</p>
+                                <a href="https://www.google.com/maps/search/?api=1&query=Kai+Kai+Dessert+Jordan" target="_blank" class="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 transition">🗺️ แผนที่</a>
+                            </div>
+                            <p class="text-sm font-medium">
+                                <span class="lang-th">บัวลอยงาดำน้ำขิงระดับมิชลิน! ของหวานสไตล์กวางตุ้งแท้ๆ กินแล้วชื่นใจ</span>
+                                <span class="lang-en">Michelin-recommended traditional Cantonese desserts. Try the black sesame!</span>
+                                <span class="lang-yue">米芝蓮推介傳統廣東糖水，黑芝麻湯圓必試！</span>
+                            </p>
+                        </div>
+
+                        <div class="bg-orange-100 p-5 comic-border food-card relative border-orange-500 border-4">
+                            <div class="absolute -top-5 -right-5 text-5xl">🍢</div>
+                            <h3 class="font-bold text-xl text-orange-800 font-mali mb-1">Fat Boy Shop</h3>
+                            <div class="flex flex-wrap items-center gap-2 mb-3">
+                                <p class="text-xs font-bold bg-black text-white px-2 py-1 rounded">📍 TST</p>
+                                <a href="https://www.google.com/maps/search/?api=1&query=Fat+Boy+Shop+Tsim+Sha+Tsui" target="_blank" class="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 transition">🗺️ แผนที่</a>
+                            </div>
+                            <p class="text-sm font-medium">
+                                <span class="lang-th">สตรีทฟู้ดเย็นเสียบไม้ (Cold skewers) ปลาหมึกกรุบๆ ราดซอสมัสตาร์ดสุดแซ่บ (สาขาน้อง Fei Jie)</span>
+                                <span class="lang-en">Cold street food skewers with signature mustard sauce. Super popular snack.</span>
+                                <span class="lang-yue">超人氣港式滷味小食，芥末醬配墨魚超正！</span>
+                            </p>
+                        </div>
+
+                        <div class="bg-indigo-50 p-5 comic-border food-card relative border-indigo-400 border-4">
+                            <div class="absolute -top-5 -right-5 text-5xl">🍜</div>
+                            <h3 class="font-bold text-xl text-indigo-700 font-mali mb-1">Mak's Noodle</h3>
+                            <div class="flex flex-wrap items-center gap-2 mb-3">
+                                <p class="text-xs font-bold bg-black text-white px-2 py-1 rounded">📍 TST</p>
+                                <a href="https://www.google.com/maps/search/?api=1&query=Mak's+Noodle+Tsim+Sha+Tsui" target="_blank" class="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 transition">🗺️ แผนที่</a>
+                            </div>
+                            <p class="text-sm font-medium">
+                                <span class="lang-th">บะหมี่เกี๊ยวกุ้งชามจิ๋วแต่รสชาติแจ๋ว! ซุปเคี่ยวจากปลาแห้งหอมกลมกล่อมระดับมิชลิน</span>
+                                <span class="lang-en">Famous wonton noodles with rich dried flounder broth. Served in small bowls.</span>
+                                <span class="lang-yue">正宗廣州雲吞麵，大地魚湯底鮮甜。</span>
+                            </p>
+                        </div>
+
+                    </div>
+
+                    <!-- Category 2: Mong Kok & Yau Ma Tei -->
+                    <h3 class="w-full font-mali font-bold text-2xl text-hkDark mb-4 border-b-4 border-yellow-500 pb-2 mt-8">📍 ย่าน Mong Kok & Yau Ma Tei (เกาลูนเหนือ)</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+
+                        <div class="bg-red-50 p-5 comic-border food-card relative border-hkRed border-4">
+                            <div class="absolute -top-5 -right-5 text-5xl">🍜</div>
+                            <h3 class="font-bold text-xl text-hkRed font-mali mb-1">Good Hope Noodle</h3>
+                            <div class="flex flex-wrap items-center gap-2 mb-3">
+                                <p class="text-xs font-bold bg-black text-white px-2 py-1 rounded">📍 Yau Ma Tei</p>
+                                <a href="https://www.google.com/maps/search/?api=1&query=Good+Hope+Noodle+Hong+Kong" target="_blank" class="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 transition">🗺️ แผนที่</a>
+                            </div>
+                            <p class="text-sm font-medium">
+                                <span class="lang-th">บะหมี่เกี๊ยวเนื้อแน่น เส้นบะหมี่ทำเองด้วยไม้นวดแป้งเหนียวนุ่ม น้ำซุปกลมกล่อม</span>
+                                <span class="lang-en">Legendary handmade wonton noodles with rich broth.</span>
+                                <span class="lang-yue">傳奇竹昇麵及雲吞，湯底鮮甜。</span>
+                            </p>
+                        </div>
+
+                        <div class="bg-orange-50 p-5 comic-border food-card relative border-orange-500 border-4">
+                            <div class="absolute -top-5 -right-5 text-5xl">🍞</div>
+                            <h3 class="font-bold text-xl text-orange-700 font-mali mb-1">Kam Wah Cafe</h3>
+                            <div class="flex flex-wrap items-center gap-2 mb-3">
+                                <p class="text-xs font-bold bg-black text-white px-2 py-1 rounded">📍 Prince Edward</p>
+                                <a href="https://www.google.com/maps/search/?api=1&query=Kam+Wah+Cafe+Hong+Kong" target="_blank" class="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 transition">🗺️ แผนที่</a>
+                            </div>
+                            <p class="text-sm font-medium">
+                                <span class="lang-th">ขนมปังสับปะรด (Polo Bun) ที่ว่ากันว่าอร่อยที่สุดในฮ่องกง! แป้งกรอบเนยฉ่ำ ทานคู่ชานมร้อนๆ</span>
+                                <span class="lang-en">Voted best Pineapple Bun (Polo Bun) in HK. Crispy crust with thick butter!</span>
+                                <span class="lang-yue">號稱全港最美味菠蘿油！外層酥脆，牛油香濃。</span>
+                            </p>
+                        </div>
+
+                        <div class="bg-yellow-50 p-5 comic-border food-card relative border-yellow-500 border-4">
+                            <div class="absolute -top-5 -right-5 text-5xl">🥟</div>
+                            <h3 class="font-bold text-xl text-yellow-700 font-mali mb-1">One Dim Sum</h3>
+                            <div class="flex flex-wrap items-center gap-2 mb-3">
+                                <p class="text-xs font-bold bg-black text-white px-2 py-1 rounded">📍 Prince Edward</p>
+                                <a href="https://www.google.com/maps/search/?api=1&query=One+Dim+Sum+Hong+Kong" target="_blank" class="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 transition">🗺️ แผนที่</a>
+                            </div>
+                            <p class="text-sm font-medium">
+                                <span class="lang-th">ติ่มซำระดับมิชลินไกด์ในราคาสบายกระเป๋า ฮะเก๋าและขนมจีบคือเมนูที่ต้องสั่ง</span>
+                                <span class="lang-en">Michelin-recommended dim sum at affordable prices. Har Gow is a must!</span>
+                                <span class="lang-yue">平民米芝蓮點心，蝦餃燒賣必試！</span>
+                            </p>
+                        </div>
+
+                        <div class="bg-stone-100 p-5 comic-border food-card relative border-stone-600 border-4">
+                            <div class="absolute -top-5 -right-5 text-5xl">🥘</div>
+                            <h3 class="font-bold text-xl text-stone-800 font-mali mb-1">Hing Kee Claypot</h3>
+                            <div class="flex flex-wrap items-center gap-2 mb-3">
+                                <p class="text-xs font-bold bg-black text-white px-2 py-1 rounded">📍 Yau Ma Tei</p>
+                                <a href="https://www.google.com/maps/search/?api=1&query=Hing+Kee+Restaurant+Yau+Ma+Tei" target="_blank" class="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 transition">🗺️ แผนที่</a>
+                            </div>
+                            <p class="text-sm font-medium">
+                                <span class="lang-th">ข้าวอบหม้อดินเตาถ่านกลิ่นหอมฟุ้ง ราดซีอิ๊วหวาน ทานคู่กับหอยทอดกรอบๆ ฟีลสตรีทสุดๆ</span>
+                                <span class="lang-en">Charcoal-cooked claypot rice and crispy oyster omelette. Street food vibes.</span>
+                                <span class="lang-yue">廟街炭爐煲仔飯及煎蠔餅，極具地道風味。</span>
+                            </p>
+                        </div>
+
+                        <div class="bg-pink-100 p-5 comic-border food-card relative border-pink-500 border-4">
+                            <div class="absolute -top-5 -right-5 text-5xl">🐙</div>
+                            <h3 class="font-bold text-xl text-pink-700 font-mali mb-1">Fei Jie Snacks</h3>
+                            <div class="flex flex-wrap items-center gap-2 mb-3">
+                                <p class="text-xs font-bold bg-black text-white px-2 py-1 rounded">📍 Mong Kok</p>
+                                <a href="https://www.google.com/maps/search/?api=1&query=Fei+Jie+Snack+Shop+Mong+Kok" target="_blank" class="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 transition">🗺️ แผนที่</a>
+                            </div>
+                            <p class="text-sm font-medium">
+                                <span class="lang-th">ร้านสตรีทฟู้ดเสียบไม้ที่คิวยาวที่สุดในมงก๊ก! เครื่องในและปลาหมึกเย็นราดซอสเด็ดมาก</span>
+                                <span class="lang-en">The most popular cold street snacks in Mong Kok. Expect a queue!</span>
+                                <span class="lang-yue">旺角超人氣滷味小食，生腸墨魚排隊必食！</span>
+                            </p>
+                        </div>
+
+                        <div class="bg-blue-50 p-5 comic-border food-card relative border-blue-400 border-4">
+                            <div class="absolute -top-5 -right-5 text-5xl">🥣</div>
+                            <h3 class="font-bold text-xl text-blue-700 font-mali mb-1">Mui Kee Congee</h3>
+                            <div class="flex flex-wrap items-center gap-2 mb-3">
+                                <p class="text-xs font-bold bg-black text-white px-2 py-1 rounded">📍 Mong Kok</p>
+                                <a href="https://www.google.com/maps/search/?api=1&query=Mui+Kee+Congee+Mong+Kok" target="_blank" class="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 transition">🗺️ แผนที่</a>
+                            </div>
+                            <p class="text-sm font-medium">
+                                <span class="lang-th">โจ๊กเนื้อเนียนต้มในหม้อทองแดง (อยู่บนชั้น 3 ตลาดสด) ทีเด็ดคือโจ๊กพุงปลาและโจ๊กตับ</span>
+                                <span class="lang-en">Smooth congee cooked in copper pots inside a wet market. Fish belly is great.</span>
+                                <span class="lang-yue">街市內銅鍋生滾粥，鯇魚腩粥及及第粥超正！</span>
+                            </p>
+                        </div>
+                        
+                        <div class="bg-amber-100 p-5 comic-border food-card relative border-amber-600 border-4 md:col-span-2 lg:col-span-3">
+                            <div class="absolute -top-6 right-10 text-6xl rotate-12">🥧</div>
+                            <h3 class="font-bold text-2xl text-amber-800 font-mali mb-1">Bakehouse</h3>
+                            <div class="flex flex-wrap items-center gap-2 mb-3">
+                                <p class="text-xs font-bold bg-black text-white px-2 py-1 rounded">📍 Mong Kok / Central</p>
+                                <a href="https://www.google.com/maps/search/?api=1&query=Bakehouse+Hong+Kong" target="_blank" class="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 transition">🗺️ แผนที่</a>
+                            </div>
+                            <p class="text-base font-medium">
+                                <span class="lang-th">ทาร์ตไข่ Sourdough ที่ดังที่สุดในฮ่องกง แป้งหอมกรอบ ไส้ไข่คัสตาร์ดละมุนลิ้น (สาขา Central คนน้อยกว่า)</span>
+                                <span class="lang-en">HK's most famous Sourdough Egg Tarts. Crispy crust and creamy custard.</span>
+                                <span class="lang-yue">全港最受歡迎的酸種蛋撻！撻皮香脆，蛋漿香滑。</span>
+                            </p>
+                        </div>
+
+                    </div>
+
+                    <!-- Category 3: Central & Sheung Wan -->
+                    <h3 class="w-full font-mali font-bold text-2xl text-hkDark mb-4 border-b-4 border-green-500 pb-2 mt-8">📍 ย่าน Central & Sheung Wan (เกาะฮ่องกง)</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+
+                        <div class="bg-red-50 p-5 comic-border food-card relative border-hkRed border-4">
+                            <div class="absolute -top-5 -right-5 text-5xl">🦆</div>
+                            <h3 class="font-bold text-xl text-hkRed font-mali mb-1">Yat Lok Roast Goose</h3>
+                            <div class="flex flex-wrap items-center gap-2 mb-3">
+                                <p class="text-xs font-bold bg-black text-white px-2 py-1 rounded">📍 Central</p>
+                                <a href="https://www.google.com/maps/search/?api=1&query=Yat+Lok+Roast+Goose+Central" target="_blank" class="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 transition">🗺️ แผนที่</a>
+                            </div>
+                            <p class="text-sm font-medium">
+                                <span class="lang-th">ร้านห่านย่างมิชลิน 1 ดาวระดับตำนาน! หนังกรอบบาง เนื้อนุ่มชุ่มฉ่ำ ทานกับข้าวสวยร้อนๆ ฟินมาก</span>
+                                <span class="lang-en">1 Michelin star roast goose. Crispy skin, juicy meat. A must-visit!</span>
+                                <span class="lang-yue">米芝蓮一星燒鵝！皮脆肉嫩，配靚飯一流。</span>
+                            </p>
+                        </div>
+
+                        <div class="bg-orange-50 p-5 comic-border food-card relative border-orange-600 border-4">
+                            <div class="absolute -top-5 -right-5 text-5xl">🍜</div>
+                            <h3 class="font-bold text-xl text-orange-800 font-mali mb-1">Kau Kee Restaurant</h3>
+                            <div class="flex flex-wrap items-center gap-2 mb-3">
+                                <p class="text-xs font-bold bg-black text-white px-2 py-1 rounded">📍 Sheung Wan</p>
+                                <a href="https://www.google.com/maps/search/?api=1&query=Kau+Kee+Beef+Noodle+Hong+Kong" target="_blank" class="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 transition">🗺️ แผนที่</a>
+                            </div>
+                            <p class="text-sm font-medium">
+                                <span class="lang-th">ก๋วยเตี๋ยวเนื้อตุ๋นน้ำใสและแกงกะหรี่ที่ดังที่สุด เนื้อเปื่อยละลายในปาก คิวยาวแต่คุ้มค่า</span>
+                                <span class="lang-en">Famous beef brisket noodles in clear or curry broth. Melt in your mouth!</span>
+                                <span class="lang-yue">著名清湯及咖喱牛腩麵，入口即化，排隊也值得。</span>
+                            </p>
+                        </div>
+
+                        <div class="bg-green-50 p-5 comic-border food-card relative border-green-600 border-4">
+                            <div class="absolute -top-5 -right-5 text-5xl">🧋</div>
+                            <h3 class="font-bold text-xl text-green-800 font-mali mb-1">Lan Fong Yuen</h3>
+                            <div class="flex flex-wrap items-center gap-2 mb-3">
+                                <p class="text-xs font-bold bg-black text-white px-2 py-1 rounded">📍 Central</p>
+                                <a href="https://www.google.com/maps/search/?api=1&query=Lan+Fong+Yuen+Central" target="_blank" class="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 transition">🗺️ แผนที่</a>
+                            </div>
+                            <p class="text-sm font-medium">
+                                <span class="lang-th">ต้นตำรับชานมถุงน่อง (Silk Stocking Milk Tea) หอมเข้มข้นสไตล์ฮ่องกงแท้ๆ สั่งคู่กับขนมปังปิ้ง</span>
+                                <span class="lang-en">The original silk stocking milk tea. Authentic strong HK flavor.</span>
+                                <span class="lang-yue">絲襪奶茶始祖，茶味香濃，必配多士。</span>
+                            </p>
+                        </div>
+
+                        <div class="bg-red-100 p-5 comic-border food-card relative border-red-500 border-4">
+                            <div class="absolute -top-5 -right-5 text-5xl">🍅</div>
+                            <h3 class="font-bold text-xl text-red-800 font-mali mb-1">Sing Heung Yuen</h3>
+                            <div class="flex flex-wrap items-center gap-2 mb-3">
+                                <p class="text-xs font-bold bg-black text-white px-2 py-1 rounded">📍 Central</p>
+                                <a href="https://www.google.com/maps/search/?api=1&query=Sing+Heung+Yuen+Central" target="_blank" class="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 transition">🗺️ แผนที่</a>
+                            </div>
+                            <p class="text-sm font-medium">
+                                <span class="lang-th">ร้านไดฟ์ป่ายตง (Dai Pai Dong) ซิกเนเจอร์คือบะหมี่ซุปมะเขือเทศเข้มข้น และขนมปังปิ้งนมข้นกรอบๆ</span>
+                                <span class="lang-en">Famous open-air stall for its rich tomato noodle soup and crispy bun.</span>
+                                <span class="lang-yue">中環超人氣大牌檔，番茄通粉及脆脆必試。</span>
+                            </p>
+                        </div>
+
+                        <div class="bg-yellow-100 p-5 comic-border food-card relative border-yellow-500 border-4">
+                            <div class="absolute -top-5 -right-5 text-5xl">🥧</div>
+                            <h3 class="font-bold text-xl text-yellow-800 font-mali mb-1">Tai Cheong Bakery</h3>
+                            <div class="flex flex-wrap items-center gap-2 mb-3">
+                                <p class="text-xs font-bold bg-black text-white px-2 py-1 rounded">📍 Central</p>
+                                <a href="https://www.google.com/maps/search/?api=1&query=Tai+Cheong+Bakery+Central" target="_blank" class="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 transition">🗺️ แผนที่</a>
+                            </div>
+                            <p class="text-sm font-medium">
+                                <span class="lang-th">ทาร์ตไข่ในตำนานของอดีตผู้ว่าเกาะฮ่องกง! แป้งคุกกี้ (Shortcrust) หอมเนยมากๆ</span>
+                                <span class="lang-en">Legendary shortcrust pastry egg tarts. Famous worldwide!</span>
+                                <span class="lang-yue">傳奇曲奇皮蛋撻，牛油味超香濃。</span>
+                            </p>
+                        </div>
+
+                        <div class="bg-purple-100 p-5 comic-border food-card relative border-purple-500 border-4">
+                            <div class="absolute -top-5 -right-5 text-5xl">🥟</div>
+                            <h3 class="font-bold text-xl text-purple-800 font-mali mb-1">Lin Heung Kui</h3>
+                            <div class="flex flex-wrap items-center gap-2 mb-3">
+                                <p class="text-xs font-bold bg-black text-white px-2 py-1 rounded">📍 Sheung Wan</p>
+                                <a href="https://www.google.com/maps/search/?api=1&query=Lin+Heung+Kui+Sheung+Wan" target="_blank" class="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 transition">🗺️ แผนที่</a>
+                            </div>
+                            <p class="text-sm font-medium">
+                                <span class="lang-th">โรงน้ำชาดั้งเดิม ติ่มซำรถเข็นแบบโบราณแท้ๆ บรรยากาศคลาสสิกสุดๆ ต้องรีบแย่งกันหยิบ!</span>
+                                <span class="lang-en">Traditional push-cart dim sum experience in an old-school teahouse setting.</span>
+                                <span class="lang-yue">傳統推車仔點心，感受老香港茶樓懷舊風味。</span>
+                            </p>
+                        </div>
+
+                    </div>
+
+                    <!-- Category 4: Wan Chai & Causeway Bay -->
+                    <h3 class="w-full font-mali font-bold text-2xl text-hkDark mb-4 border-b-4 border-pink-500 pb-2 mt-8">📍 ย่าน Wan Chai & Causeway Bay (เกาะฮ่องกงตะวันออก)</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+
+                        <div class="bg-pink-50 p-5 comic-border food-card relative border-pink-500 border-4">
+                            <div class="absolute -top-5 -right-5 text-5xl">☕</div>
+                            <h3 class="font-bold text-xl text-pink-700 font-mali mb-1">Wah Hueng Yuen</h3>
+                            <div class="flex flex-wrap items-center gap-2 mb-3">
+                                <p class="text-xs font-bold bg-black text-white px-2 py-1 rounded">📍 Wan Chai</p>
+                                <a href="https://www.google.com/maps/search/?api=1&query=Wah+Hueng+Yuen+Hong+Kong" target="_blank" class="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 transition">🗺️ แผนที่</a>
+                            </div>
+                            <p class="text-sm font-medium">
+                                <span class="lang-th">ร้านสไตล์ไดฟ์ป่ายตง (Cha Chaan Teng) สุดเก๋า ดื่มชานมพร้อมซึมซับบรรยากาศโลคอล</span>
+                                <span class="lang-en">Authentic Cha Chaan Teng setting for a local breakfast experience.</span>
+                                <span class="lang-yue">傳統茶餐廳風味，感受地道早餐氣氛。</span>
+                            </p>
+                        </div>
+
+                        <div class="bg-red-100 p-5 comic-border food-card relative border-red-700 border-4">
+                            <div class="absolute -top-5 -right-5 text-5xl">🍖</div>
+                            <h3 class="font-bold text-xl text-red-800 font-mali mb-1">Joy Hing Roasted Meat</h3>
+                            <div class="flex flex-wrap items-center gap-2 mb-3">
+                                <p class="text-xs font-bold bg-black text-white px-2 py-1 rounded">📍 Wan Chai</p>
+                                <a href="https://www.google.com/maps/search/?api=1&query=Joy+Hing+Roasted+Meat+Wan+Chai" target="_blank" class="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 transition">🗺️ แผนที่</a>
+                            </div>
+                            <p class="text-sm font-medium">
+                                <span class="lang-th">ร้านหมูแดง (Char Siu) ระดับตำนานที่ได้มิชลิน หมูแดงย่างเตาถ่านหอมๆ น้ำราดหวานกลมกล่อม</span>
+                                <span class="lang-en">Michelin-rated legendary Char Siu (BBQ Pork) roasted on charcoal.</span>
+                                <span class="lang-yue">米芝蓮推介傳奇炭燒叉燒，肉汁豐富。</span>
+                            </p>
+                        </div>
+                        
+                        <div class="bg-teal-50 p-5 comic-border food-card relative border-teal-500 border-4">
+                            <div class="absolute -top-5 -right-5 text-5xl">🥟</div>
+                            <h3 class="font-bold text-xl text-teal-800 font-mali mb-1">Ho Hung Kee</h3>
+                            <div class="flex flex-wrap items-center gap-2 mb-3">
+                                <p class="text-xs font-bold bg-black text-white px-2 py-1 rounded">📍 Causeway Bay</p>
+                                <a href="https://www.google.com/maps/search/?api=1&query=Ho+Hung+Kee+Hysan+Place" target="_blank" class="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 transition">🗺️ แผนที่</a>
+                            </div>
+                            <p class="text-sm font-medium">
+                                <span class="lang-th">ร้านโจ๊กและบะหมี่ระดับมิชลิน 1 ดาว ตั้งอยู่ในห้าง Hysan Place โจ๊กเนื้อเนียน บะหมี่เกี๊ยวกุ้งตัวโตๆ</span>
+                                <span class="lang-en">1 Michelin star congee and noodle shop inside Hysan Place.</span>
+                                <span class="lang-yue">希慎廣場內米芝蓮一星粥麵店，生滾粥必試。</span>
+                            </p>
+                        </div>
+
+                        <div class="bg-red-50 p-5 comic-border food-card relative border-red-600 border-4">
+                            <div class="absolute -top-5 -right-5 text-5xl">🦆</div>
+                            <h3 class="font-bold text-xl text-red-800 font-mali mb-1">Kam's Roast Goose</h3>
+                            <div class="flex flex-wrap items-center gap-2 mb-3">
+                                <p class="text-xs font-bold bg-black text-white px-2 py-1 rounded">📍 Wan Chai</p>
+                                <a href="https://www.google.com/maps/search/?api=1&query=Kam's+Roast+Goose+Wan+Chai" target="_blank" class="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 transition">🗺️ แผนที่</a>
+                            </div>
+                            <p class="text-sm font-medium">
+                                <span class="lang-th">ห่านย่างมิชลิน 1 ดาว 10 ปีซ้อน! หนังกรอบเนื้อชุ่มฉ่ำสุดๆ (เจ้าของแยกตัวมาจากร้าน Yung Kee)</span>
+                                <span class="lang-en">Famous 1 Michelin star roast goose. Consistently great for years.</span>
+                                <span class="lang-yue">連續多年米芝蓮一星燒鵝，皮脆肉汁多，必試！</span>
+                            </p>
+                        </div>
+
+                        <div class="bg-yellow-50 p-5 comic-border food-card relative border-yellow-600 border-4">
+                            <div class="absolute -top-5 -right-5 text-5xl">🍳</div>
+                            <h3 class="font-bold text-xl text-yellow-800 font-mali mb-1">Capital Cafe</h3>
+                            <div class="flex flex-wrap items-center gap-2 mb-3">
+                                <p class="text-xs font-bold bg-black text-white px-2 py-1 rounded">📍 Wan Chai</p>
+                                <a href="https://www.google.com/maps/search/?api=1&query=Capital+Cafe+Wan+Chai" target="_blank" class="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 transition">🗺️ แผนที่</a>
+                            </div>
+                            <p class="text-sm font-medium">
+                                <span class="lang-th">ไข่คนทรัฟเฟิลดำ (Black Truffle Scrambled Egg) โปะบนขนมปังปิ้ง หอมกลิ่นทรัฟเฟิลทะลุแมสก์</span>
+                                <span class="lang-en">Signature scrambled egg with black truffle on toast. Smells amazing!</span>
+                                <span class="lang-yue">冰室招牌黑松露炒蛋多士，香氣撲鼻，口感滑溜。</span>
+                            </p>
+                        </div>
+
+                        <div class="bg-blue-50 p-5 comic-border food-card relative border-blue-600 border-4">
+                            <div class="absolute -top-5 -right-5 text-5xl">🍜</div>
+                            <h3 class="font-bold text-xl text-blue-800 font-mali mb-1">Sister Wah</h3>
+                            <div class="flex flex-wrap items-center gap-2 mb-3">
+                                <p class="text-xs font-bold bg-black text-white px-2 py-1 rounded">📍 Tin Hau / CWB</p>
+                                <a href="https://www.google.com/maps/search/?api=1&query=Sister+Wah+Beef+Brisket+Tin+Hau" target="_blank" class="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 transition">🗺️ แผนที่</a>
+                            </div>
+                            <p class="text-sm font-medium">
+                                <span class="lang-th">ก๋วยเตี๋ยวเนื้อตุ๋นหัวไชเท้าน้ำใส รางวัลมิชลินบิบกูร์มองด์ เนื้อนุ่มละลาย ซุปใสซดคล่องคอ</span>
+                                <span class="lang-en">Michelin Bib Gourmand recommended clear broth beef brisket noodles.</span>
+                                <span class="lang-yue">米芝蓮推介華姐清湯牛腩，肉質軟腍，湯底清甜。</span>
+                            </p>
+                        </div>
+
+                    </div>
+                </div>
+
             </div>
         </div>
 
         <!-- Bottom Area: Recommendations -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <!-- Card 1 -->
-            <div class="bg-white comic-border overflow-hidden group">
-                <img src="https://placehold.co/400x200/FF4B4B/FFF?text=Dim+Sum+Love" alt="Food" class="w-full h-32 object-cover clickable-img" onclick="changeImage(this)">
+            <div class="bg-white comic-border overflow-hidden">
+                <img src="https://placehold.co/400x200/FF4B4B/FFF?text=Dim+Sum" alt="Food" class="w-full h-32 object-cover clickable-img" onclick="changeImage(this)">
                 <div class="p-4">
-                    <h3 class="font-mali font-bold text-lg text-hkRed mb-1" contenteditable="true">🍜 ร้านอาหารพื้นเมืองแนะนำ</h3>
-                    <p class="text-sm" contenteditable="true">- Mak's Noodle (บะหมี่เกี๊ยว)<br>- Lin Heung Tea House (ติ่มซำดั้งเดิม)<br>- Yat Lok (ห่านย่างมิชลิน)</p>
+                    <h3 class="font-mali font-bold text-lg text-hkRed mb-1" contenteditable="true">
+                        <span class="lang-th">🍜 ร้านอาหารพื้นเมือง</span><span class="lang-en">🍜 Local Cuisine</span><span class="lang-yue">🍜 地道美食</span>
+                    </h3>
+                    <p class="text-sm" contenteditable="true">- Good Hope Noodle<br>- One Dim Sum<br>- Chukfo Taipan</p>
                 </div>
             </div>
-            <!-- Card 2 -->
-            <div class="bg-white comic-border overflow-hidden group">
-                <img src="https://placehold.co/400x200/00E5FF/000?text=Gen-Z+Spots" alt="Photo" class="w-full h-32 object-cover clickable-img" onclick="changeImage(this)">
+            <div class="bg-white comic-border overflow-hidden">
+                <img src="https://placehold.co/400x200/00E5FF/000?text=Photo+Spots" alt="Photo" class="w-full h-32 object-cover clickable-img" onclick="changeImage(this)">
                 <div class="p-4">
-                    <h3 class="font-mali font-bold text-lg text-blue-600 mb-1" contenteditable="true">📸 แหล่งถ่ายรูปสุดปังของวัยรุ่น</h3>
-                    <p class="text-sm" contenteditable="true">- Choi Hung Estate (ตึกสีรุ้ง)<br>- Monster Building (ตึกทรานสฟอร์เมอร์)<br>- K11 Musea (อาร์ตมอลล์)</p>
+                    <h3 class="font-mali font-bold text-lg text-blue-600 mb-1" contenteditable="true">
+                        <span class="lang-th">📸 จุดถ่ายรูปวัยรุ่น</span><span class="lang-en">📸 Photo Spots</span><span class="lang-yue">📸 打卡熱點</span>
+                    </h3>
+                    <p class="text-sm" contenteditable="true">- Monster Building<br>- Tai Kwun<br>- Kennedy Town<br>- 1881 Heritage</p>
                 </div>
             </div>
-            <!-- Card 3 -->
-            <div class="bg-white comic-border overflow-hidden group">
-                <img src="https://placehold.co/400x200/FFEA00/000?text=Shopping+Time" alt="Shop" class="w-full h-32 object-cover clickable-img" onclick="changeImage(this)">
+            <div class="bg-white comic-border overflow-hidden">
+                <img src="https://placehold.co/400x200/FFEA00/000?text=Shopping" alt="Shop" class="w-full h-32 object-cover clickable-img" onclick="changeImage(this)">
                 <div class="p-4">
-                    <h3 class="font-mali font-bold text-lg text-orange-600 mb-1" contenteditable="true">🛍️ แหล่งช้อปปิ้งละลายทรัพย์</h3>
-                    <p class="text-sm" contenteditable="true">- Mong Kok (รองเท้าผ้าใบ, ของเล่น)<br>- Causeway Bay (แฟชั่น, เครื่องสำอาง)<br>- Citygate Outlets (แบรนด์เนมลดราคา)</p>
+                    <h3 class="font-mali font-bold text-lg text-orange-600 mb-1" contenteditable="true">
+                        <span class="lang-th">🛍️ ช้อปปิ้งละลายทรัพย์</span><span class="lang-en">🛍️ Shopping Spree</span><span class="lang-yue">🛍️ 購物熱點</span>
+                    </h3>
+                    <p class="text-sm" contenteditable="true">- Temple Street<br>- Fa Yuen Market<br>- Best Mart 360</p>
                 </div>
             </div>
         </div>
 
-    </div> <!-- End Capture Area -->
+    </div>
 
-    <!-- Floating Actions (Export/Print) -->
-    <div class="fixed bottom-6 left-6 flex flex-col gap-3 z-50">
+    <!-- Floating Actions -->
+    <div class="fixed bottom-6 left-6 flex flex-col gap-3 z-50 no-print">
         <button onclick="captureScreen()" class="comic-btn bg-hkNeonBlue px-4 py-3 font-mali font-bold flex items-center gap-2 hover:bg-cyan-300">
-            📸 Capture Screen
+            📸 Screenshot
         </button>
         <button onclick="exportPDF()" class="comic-btn bg-hkRed text-white px-4 py-3 font-mali font-bold flex items-center gap-2 hover:bg-red-600">
-            📄 Export to PDF
+            📄 PDF
         </button>
     </div>
 
-    <!-- Floating AI Chatbot -->
-    <div class="fixed bottom-6 right-6 z-50 flex flex-col items-end">
-        <!-- Chat Window (Hidden by default) -->
-        <div id="chat-window" class="hidden w-80 bg-white comic-border mb-4 overflow-hidden flex flex-col h-96">
-            <div class="bg-hkRed text-white p-3 font-mali font-bold flex justify-between items-center">
-                <span>🤖 ไกด์อาหมวย (AI)</span>
-                <button onclick="toggleChat()" class="hover:text-gray-200">❌</button>
+    <!-- Floating Travel Buddy (Replaces AI Chatbot) -->
+    <div class="fixed bottom-6 right-6 z-[600] flex flex-col items-end no-print">
+        <div id="buddy-window" class="hidden w-80 sm:w-96 bg-white comic-border mb-4 overflow-hidden flex flex-col max-h-[80vh]">
+            <div class="bg-hkNeonBlue text-black p-3 font-mali font-bold flex justify-between items-center border-b-2 border-black">
+                <span class="text-lg">🧋 <span class="lang-th">ผู้ช่วยนักเดินทางฮ่องกง</span><span class="lang-en">HK Travel Buddy</span><span class="lang-yue">香港旅遊助手</span></span>
+                <button onclick="toggleBuddy()" class="hover:scale-110 transition bg-white border-2 border-black rounded-full w-8 h-8 flex items-center justify-center">❌</button>
             </div>
-            <div id="chat-messages" class="flex-1 p-3 overflow-y-auto space-y-3 bg-gray-50 text-sm">
-                <div class="flex gap-2">
-                    <div class="text-2xl">💁🏻‍♀️</div>
-                    <div class="bg-white p-2 border-2 border-black rounded-lg rounded-tl-none">
-                        หนีห่าว! มีคำถามอะไรเกี่ยวกับการเที่ยวฮ่องกง ถามอาหมวยได้เลยน้าาา 🥰
+            
+            <div class="flex-1 p-4 overflow-y-auto space-y-6 bg-hkCream font-kanit">
+                
+                <!-- Section 1: Food Roulette -->
+                <div class="bg-white p-3 rounded-xl border-2 border-black shadow-[3px_3px_0_0_#1A1A1A]">
+                    <h3 class="font-mali font-bold text-hkRed mb-2 border-b-2 border-dashed border-gray-300 pb-1">🎲 <span class="lang-th">กาชาปองสุ่มของกิน</span><span class="lang-en">Food Roulette</span><span class="lang-yue">美食扭蛋</span></h3>
+                    <p class="text-xs text-gray-600 mb-2"><span class="lang-th">คิดไม่ออกมื้อนี้กินอะไรดี? กดสุ่มเลย!</span><span class="lang-en">Don't know what to eat? Spin!</span><span class="lang-yue">不知道吃什麼？抽一個吧！</span></p>
+                    <div class="flex gap-2 items-center mb-2">
+                        <button onclick="spinRoulette()" class="comic-btn bg-hkNeonYellow px-4 py-2 font-bold hover:bg-yellow-300 whitespace-nowrap"><span class="lang-th">สุ่มเลย!</span><span class="lang-en">Spin!</span><span class="lang-yue">抽!</span></button>
+                        <div id="roulette-result" class="flex-1 text-center font-bold text-lg text-blue-600 bg-blue-50 py-1 rounded transition-colors">🍜 ? 🦆</div>
+                    </div>
+                    <div class="flex gap-2 items-center mt-2">
+                        <input type="text" id="new-food-input" placeholder="เพิ่มเมนูของครอบครัว..." class="flex-1 border-2 border-black rounded px-2 py-1 text-sm outline-none focus:border-hkRed font-kanit">
+                        <button onclick="addFoodToRoulette()" class="comic-btn bg-green-400 px-3 py-1 text-sm font-bold hover:bg-green-500 whitespace-nowrap">➕ <span class="lang-th">เพิ่ม</span><span class="lang-en">Add</span><span class="lang-yue">新增</span></button>
                     </div>
                 </div>
-            </div>
-            <div class="p-3 border-t-2 border-black bg-white flex gap-2">
-                <input type="text" id="chat-input" placeholder="พิมพ์คำถามที่นี่..." class="flex-1 border-2 border-black rounded p-2 text-sm focus:outline-none focus:border-hkRed" onkeypress="handleChatEnter(event)">
-                <button onclick="sendChat()" class="bg-hkNeonYellow comic-btn px-3 font-bold">ส่ง</button>
+
+                <!-- Section 2: Survival Cantonese -->
+                <div class="bg-white p-3 rounded-xl border-2 border-black shadow-[3px_3px_0_0_#1A1A1A]">
+                    <h3 class="font-mali font-bold text-blue-600 mb-2 border-b-2 border-dashed border-gray-300 pb-1">🗣️ <span class="lang-th">กวางตุ้งเอาตัวรอด (กดเพื่อฟัง)</span><span class="lang-en">Survival Cantonese (Tap)</span><span class="lang-yue">實用廣東話 (點擊發音)</span></h3>
+                    
+                    <!-- Scrollable Phrasebook -->
+                    <div class="space-y-3 text-sm max-h-60 overflow-y-auto pr-1">
+                        
+                        <!-- หมวดทักทาย / มารยาท -->
+                        <div>
+                            <div class="text-xs font-bold text-gray-500 mb-1">🤝 <span class="lang-th">ทักทาย / มารยาท</span><span class="lang-en">Greetings / Politeness</span><span class="lang-yue">問候 / 禮貌</span></div>
+                            <div class="space-y-1">
+                                <button onclick="speakCantonese('你好')" class="w-full text-left comic-btn bg-pink-50 hover:bg-pink-100 px-3 py-1.5 flex justify-between items-center text-[13px]">
+                                    <span>👋 <span class="lang-th">สวัสดี</span><span class="lang-en">Hello</span><span class="lang-yue">你好</span> (Neih hou)</span><span class="text-base">🔊</span>
+                                </button>
+                                <button onclick="speakCantonese('唔該')" class="w-full text-left comic-btn bg-pink-50 hover:bg-pink-100 px-3 py-1.5 flex justify-between items-center text-[13px]">
+                                    <span>🙏 <span class="lang-th">ขอบคุณ/ขอทาง</span><span class="lang-en">Thanks/Excuse me</span><span class="lang-yue">唔該</span> (M goi)</span><span class="text-base">🔊</span>
+                                </button>
+                                <button onclick="speakCantonese('唔好意思')" class="w-full text-left comic-btn bg-pink-50 hover:bg-pink-100 px-3 py-1.5 flex justify-between items-center text-[13px]">
+                                    <span>🙇 <span class="lang-th">ขอโทษ/รบกวน</span><span class="lang-en">Sorry</span><span class="lang-yue">唔好意思</span> (M ho yi si)</span><span class="text-base">🔊</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- หมวดช้อปปิ้ง -->
+                        <div>
+                            <div class="text-xs font-bold text-gray-500 mb-1">🛍️ <span class="lang-th">ช้อปปิ้ง</span><span class="lang-en">Shopping</span><span class="lang-yue">購物</span></div>
+                            <div class="space-y-1">
+                                <button onclick="speakCantonese('呢個幾多錢呀')" class="w-full text-left comic-btn bg-green-50 hover:bg-green-100 px-3 py-1.5 flex justify-between items-center text-[13px]">
+                                    <span>💰 <span class="lang-th">อันนี้เท่าไหร่?</span><span class="lang-en">How much?</span><span class="lang-yue">呢個幾多錢呀?</span> (Gei do chin a?)</span><span class="text-base">🔊</span>
+                                </button>
+                                <button onclick="speakCantonese('平啲啦')" class="w-full text-left comic-btn bg-green-50 hover:bg-green-100 px-3 py-1.5 flex justify-between items-center text-[13px]">
+                                    <span>📉 <span class="lang-th">ลดได้ไหม?</span><span class="lang-en">Cheaper?</span><span class="lang-yue">平啲啦</span> (Peng di la)</span><span class="text-base">🔊</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- หมวดร้านอาหาร -->
+                        <div>
+                            <div class="text-xs font-bold text-gray-500 mb-1">🍜 <span class="lang-th">ร้านอาหาร</span><span class="lang-en">Dining</span><span class="lang-yue">餐廳</span></div>
+                            <div class="space-y-1">
+                                <button onclick="speakCantonese('買單')" class="w-full text-left comic-btn bg-orange-50 hover:bg-orange-100 px-3 py-1.5 flex justify-between items-center text-[13px]">
+                                    <span>🧾 <span class="lang-th">เก็บเงินด้วย</span><span class="lang-en">Bill please</span><span class="lang-yue">買單</span> (Mai daan)</span><span class="text-base">🔊</span>
+                                </button>
+                                <button onclick="speakCantonese('好食')" class="w-full text-left comic-btn bg-orange-50 hover:bg-orange-100 px-3 py-1.5 flex justify-between items-center text-[13px]">
+                                    <span>😋 <span class="lang-th">อร่อยมาก</span><span class="lang-en">Delicious</span><span class="lang-yue">好食</span> (Hou sihk)</span><span class="text-base">🔊</span>
+                                </button>
+                                <button onclick="speakCantonese('唔辣')" class="w-full text-left comic-btn bg-orange-50 hover:bg-orange-100 px-3 py-1.5 flex justify-between items-center text-[13px]">
+                                    <span>🌶️ ❌ <span class="lang-th">ไม่เอาเผ็ด</span><span class="lang-en">Not spicy</span><span class="lang-yue">唔辣</span> (M laht)</span><span class="text-base">🔊</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- หมวดเดินทาง -->
+                        <div>
+                            <div class="text-xs font-bold text-gray-500 mb-1">🚆 <span class="lang-th">เดินทาง</span><span class="lang-en">Transport</span><span class="lang-yue">交通</span></div>
+                            <div class="space-y-1">
+                                <button onclick="speakCantonese('洗手間喺邊呀')" class="w-full text-left comic-btn bg-blue-50 hover:bg-blue-100 px-3 py-1.5 flex justify-between items-center text-[13px]">
+                                    <span>🚻 <span class="lang-th">ห้องน้ำอยู่ไหน?</span><span class="lang-en">Where is toilet?</span><span class="lang-yue">洗手間喺邊呀?</span> (Sai sau gaan hai bin a?)</span><span class="text-base">🔊</span>
+                                </button>
+                                <button onclick="speakCantonese('地鐵站喺邊呀')" class="w-full text-left comic-btn bg-blue-50 hover:bg-blue-100 px-3 py-1.5 flex justify-between items-center text-[13px]">
+                                    <span>🚇 <span class="lang-th">MTR อยู่ไหน?</span><span class="lang-en">Where is MTR?</span><span class="lang-yue">地鐵站喺邊呀?</span> (Dei tit jaam hai bin a?)</span><span class="text-base">🔊</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- หมวดฉุกเฉิน -->
+                        <div>
+                            <div class="text-xs font-bold text-red-500 mb-1">🚨 <span class="lang-th">ฉุกเฉิน</span><span class="lang-en">Emergency</span><span class="lang-yue">緊急</span></div>
+                            <div class="space-y-1">
+                                <button onclick="speakCantonese('救命呀')" class="w-full text-left comic-btn bg-red-100 hover:bg-red-200 px-3 py-1.5 flex justify-between items-center text-[13px] border-red-400">
+                                    <span class="text-red-700 font-bold">🆘 <span class="lang-th">ช่วยด้วย!</span><span class="lang-en">Help!</span><span class="lang-yue">救命呀!</span> (Gau meng a!)</span><span class="text-base">🔊</span>
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Section 3: Emergency & MTR -->
+                <div class="bg-white p-3 rounded-xl border-2 border-black shadow-[3px_3px_0_0_#1A1A1A]">
+                    <h3 class="font-mali font-bold text-orange-600 mb-2 border-b-2 border-dashed border-gray-300 pb-1">🚆 <span class="lang-th">ข้อมูลสำคัญ & ฉุกเฉิน</span><span class="lang-en">Info & Emergency</span><span class="lang-yue">重要資訊及緊急聯絡</span></h3>
+                    <div class="flex flex-col gap-2">
+                        <a href="https://www.mtr.com.hk/en/customer/services/system_map.html" target="_blank" class="comic-btn bg-gray-100 hover:bg-gray-200 px-3 py-2 text-center text-sm font-bold flex items-center justify-center gap-2">
+                            🚇 <span class="lang-th">ดูแผนที่รถไฟฟ้า MTR แบบชัดๆ</span><span class="lang-en">View MTR System Map</span><span class="lang-yue">查看港鐵路線圖</span>
+                        </a>
+                        <div class="bg-red-50 text-hkRed p-2 rounded-lg border border-red-200 text-center font-bold">
+                            📞 <span class="lang-th">เหตุด่วนเหตุร้าย:</span><span class="lang-en">Emergency:</span><span class="lang-yue">緊急求助:</span> 999
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
-
-        <!-- Chat Toggle Button -->
-        <button onclick="toggleChat()" class="w-16 h-16 bg-white comic-border rounded-full flex items-center justify-center text-4xl hover:scale-110 transition-transform relative">
-            💁🏻‍♀️
-            <span class="absolute -top-2 -right-2 bg-hkRed text-white text-xs font-bold px-2 py-1 rounded-full border-2 border-black animate-bounce">ถามฉันสิ!</span>
+        <button onclick="toggleBuddy()" class="w-16 h-16 bg-hkNeonYellow comic-border rounded-full flex items-center justify-center text-3xl hover:scale-110 transition-transform relative z-[600]">
+            🧋
         </button>
     </div>
 
     <!-- Script Section -->
     <script>
-        // --- Data Models ---
+        const t = (th, en, yue) => `<span class="lang-th">${th}</span><span class="lang-en">${en}</span><span class="lang-yue">${yue}</span>`;
+
         let currentDay = 'day1';
+        let advMap = null;
+        const leafletLayers = {};
+        
+        // ย้ายตัวแปรเก็บเมนูอาหารออกมาด้านนอกเพื่อให้เพิ่มข้อมูลได้
+        let rouletteFoods = [
+            t('🥟 ติ่มซำ', '🥟 Dim Sum', '🥟 點心'), 
+            t('🦆 ห่านย่าง', '🦆 Roast Goose', '🦆 燒鵝'), 
+            t('🍜 บะหมี่เกี๊ยว', '🍜 Wonton Noodles', '🍜 雲吞麵'), 
+            t('🥧 ทาร์ตไข่', '🥧 Egg Tart', '🥧 蛋撻'), 
+            t('🧋 ชานมฮ่องกง', '🧋 HK Milk Tea', '🧋 港式奶茶'), 
+            t('🥣 โจ๊กเนื้อเนียน', '🥣 Congee', '🥣 生滾粥'), 
+            t('🍖 หมูแดง', '🍖 BBQ Pork', '🍖 叉燒'), 
+            t('🧇 วาฟเฟิลฮ่องกง', '🧇 Egg Waffle', '🧇 雞蛋仔')
+        ];
         
         const initialChecklist = [
-            { id: 1, text: "พาสปอร์ต (อายุเหลือ > 6 เดือน)", done: false },
-            { id: 2, text: "Octopus Card (สำหรับทุกคน)", done: false },
-            { id: 3, text: "หัวแปลงปลั๊กไฟ (UK Type G)", done: false },
-            { id: 4, text: "ยาสามัญ / ยาประจำตัว", done: false },
-            { id: 5, text: "Sim Card / Roaming", done: false },
+            { id: 1, text: t("พาสปอร์ต (อายุเหลือ > 6 เดือน)", "Passport (Valid > 6 months)", "護照 (有效期>6個月)"), done: false },
+            { id: 2, text: t("Octopus Card (สำหรับทุกคน)", "Octopus Card (For everyone)", "八達通 (每人一張)"), done: false },
+            { id: 3, text: t("หัวแปลงปลั๊กไฟ (UK Type G)", "Power Adapter (UK Type G)", "轉插器 (英規 Type G)"), done: false },
+            { id: 4, text: t("ยาสามัญ / ยาประจำตัว", "Personal Medicine", "常備藥物"), done: false },
         ];
 
-        // Default Itinerary Data
         const itineraryData = {
             day1: [
-                { time: "08:00", title: "ถึงสนามบิน Chek Lap Kok ✈️", desc: "ผ่านตม. รับกระเป๋า ซื้อบัตร Octopus", travel: "นั่ง Airport Express ไปลงสถานี Kowloon (22 นาที)", img: "https://placehold.co/300x200/4CAF50/FFF?text=HK+Airport" },
-                { time: "10:30", title: "เช็คอินเข้าที่พักย่าน Tsim Sha Tsui 🏨", desc: "ฝากกระเป๋า ล้างหน้าล้างตา", travel: "เดินจากสถานี Kowloon หรือนั่ง Taxi สั้นๆ", img: "https://placehold.co/300x200/2196F3/FFF?text=Hotel" },
-                { time: "12:00", title: "มื้อเที่ยง: ติ่มซำฉลองทริป 🥟", desc: "กินติ่มซำร้านดังแถวที่พัก ให้เด็กๆ ได้ลองฮะเก๋า ซาลาเปาหมูแดง", travel: "เดินเท้า 5-10 นาที", img: "https://placehold.co/300x200/FF9800/FFF?text=Dim+Sum" },
-                { time: "14:00", title: "เดินเล่น Avenue of Stars & K11 Musea ✨", desc: "ถ่ายรูปกับรอยมือคนดัง ดูวิวอ่าววิคตอเรีย และช้อปปิ้งเบาๆ ตากแอร์", travel: "เดินเลียบอ่าววิคตอเรีย", img: "https://placehold.co/300x200/9C27B0/FFF?text=Avenue+of+Stars" },
-                { time: "20:00", title: "ชมการแสดง Symphony of Lights 🌃", desc: "ดูโชว์แสงสีเสียงริมอ่าว (หาจุดยืนดีๆ แถวหอนาฬิกา)", travel: "เดินเล่นริมอ่าว", img: "https://placehold.co/300x200/1A1A1A/FFF?text=Symphony+of+Lights" }
+                { time: "11:45", title: t("ถึงสนามบินฮ่องกง / ซื้อบัตร Octopus", "Arrive HKIA / Buy Octopus Card", "到達香港機場 / 購買八達通"), desc: t("ผ่าน ตม. รับกระเป๋า (~200 HKD)", "Immigration, Baggage Claim (~200 HKD)", "入境，領取行李 (~200 HKD)"), travel: t("เดิน", "Walk", "步行"), img: "https://placehold.co/300x200/FF4B4B/FFF?text=HK+Airport" },
+                { time: "12:45", title: t("เดินทางไปโรงแรม The City View", "Travel to The City View Hotel", "前往城景國際酒店"), desc: t("เช็คอินและฝากกระเป๋า (34.6 HKD)", "Check-in & Drop Luggage (34.6 HKD)", "入住及寄存行李 (34.6 HKD)"), travel: t("รถบัส A21 (ลงป้าย Pitt Street)", "Bus A21 (Pitt St Stop)", "城巴A21 (碧街站)"), img: "https://placehold.co/300x200/00E5FF/FFF?text=City+View" },
+                { time: "14:15", title: t("มื้อกลางวัน: Good Hope Noodle", "Lunch: Good Hope Noodle", "午餐：好旺角麵家"), desc: t("แวะทานบะหมี่หรือโจ๊กเติมพลัง (50 - 70 HKD)", "Noodles or Congee (50 - 70 HKD)", "麵食或粥品 (50 - 70 HKD)"), travel: t("เดินเท้า (Yau Ma Tei)", "Walk (Yau Ma Tei)", "步行 (油麻地)"), img: "https://placehold.co/300x200/FFEA00/000?text=Lunch" },
+                { time: "15:15", title: t("Tai Kwun (ไท่กวีน)", "Tai Kwun", "大館"), desc: t("สถานีตำรวจเก่า ถ่ายรูปสถาปัตยกรรม", "Former Police Station, Architecture", "前警察總部，建築攝影"), travel: t("MTR สายสีแดง", "MTR Red Line", "港鐵荃灣綫"), img: "https://placehold.co/300x200/4CAF50/FFF?text=Tai+Kwun" },
+                { time: "16:45", title: t("Kennedy Town", "Kennedy Town", "堅尼地城"), desc: t("เดินเล่นริมทะเลพักผ่อน ถ่ายรูปมุมฮิต", "Seaside Walk, Photo Spots", "海濱散步，打卡熱點"), travel: t("MTR สายสีน้ำเงิน", "MTR Blue Line", "港鐵港島綫"), img: "https://placehold.co/300x200/2196F3/FFF?text=Kennedy+Town" },
+                { time: "19:45", title: t("ชมโชว์ A Symphony of Lights", "A Symphony of Lights", "幻彩詠香江"), desc: t("ชมโชว์แสงสีระดับโลก (เริ่ม 20.00 น.)", "World-class Light Show (Starts 20:00)", "世界級燈光秀 (晚上8點開始)"), travel: t("เดินเท้าเลียบอ่าว", "Walk along the harbour", "沿海濱步行"), img: "https://placehold.co/300x200/9C27B0/FFF?text=Symphony" },
+                { time: "20:45", title: t("Prudential Winter Wonderland", "Prudential Winter Wonderland", "尖沙咀冬日藝術節"), desc: t("ชม Light Show ริมอ่าว @ HK Cultural Centre", "Light Show @ HK Cultural Centre", "香港文化中心光影秀"), travel: t("เดิน", "Walk", "步行"), img: "https://placehold.co/300x200/FF4B4B/FFF?text=Winter+Wonderland" },
+                { time: "21:15", title: t("มื้อเย็น & ช้อปปิ้ง: Temple Street", "Dinner & Shopping: Temple Street", "晚餐及購物：廟街"), desc: t("ตลาดกลางคืน ร้าน SaSa กินไอติม", "Night Market, SaSa, Ice Cream", "夜市，SaSa，吃雪糕"), travel: t("MTR", "MTR", "港鐵"), img: "https://placehold.co/300x200/FF9800/FFF?text=Temple+St" }
             ],
             day2: [
-                { time: "09:00", title: "ลุย Hong Kong Disneyland! 🏰", desc: "อยู่ยาวทั้งวัน! ห้ามพลาดโซนใหม่ World of Frozen", travel: "MTR ไปสถานี Sunny Bay ต่อสาย Disneyland Resort", img: "https://placehold.co/300x200/FF4B4B/FFF?text=Disneyland" },
-                { time: "20:00", title: "ดูพลุปราสาท Momentous 🎆", desc: "จองที่นั่งรอดูพลุสุดอลังการก่อนกลับ", travel: "ในดิสนีย์แลนด์", img: "https://placehold.co/300x200/000/FFF?text=Fireworks" }
+                { time: "08:00", title: t("มื้อเช้า: ข้าวหมูกรอบ", "Breakfast: Roast Pork", "早餐：燒肉飯"), desc: t("เติมพลังใกล้โรงแรม (35 - 50 HKD)", "Near Hotel (35 - 50 HKD)", "酒店附近 (35 - 50 HKD)"), travel: t("เดินเท้า", "Walk", "步行"), img: "https://placehold.co/300x200/FFEA00/000?text=Breakfast" },
+                { time: "08:45", title: t("เดินทางไปหมู่บ้านนองปิง", "Travel to Ngong Ping", "前往昂坪市集"), desc: t("นั่งรถไปขึ้นเขา", "Bus to the mountain", "乘車上山"), travel: t("MTR + รถบัสสาย 23", "MTR + Bus 23", "港鐵 + 23號巴士"), img: "https://placehold.co/300x200/4CAF50/FFF?text=Ngong+Ping" },
+                { time: "10:15", title: t("วัดพระใหญ่เทียนถาน", "Tian Tan Buddha", "天壇大佛"), desc: t("สักการะพระใหญ่เทียนถาน", "Visit the Giant Buddha", "參拜大佛"), travel: t("เดินเท้า", "Walk", "步行"), img: "https://placehold.co/300x200/00E5FF/FFF?text=Tian+Tan" },
+                { time: "12:30", title: t("มื้อกลางวันย่าน Tung Chung", "Lunch @ Tung Chung", "東涌午餐"), desc: t("ทานกลางวัน", "Lunch", "吃午餐"), travel: t("เดินเท้า", "Walk", "步行"), img: "https://placehold.co/300x200/FF9800/FFF?text=Lunch" },
+                { time: "14:00", title: t("วัดแชกงหมิว", "Che Kung Temple", "車公廟"), desc: t("สักการะเทพเจ้าแชกง หมุนกังหัน", "Pray & spin the windmill", "參拜車公，轉風車"), travel: t("MTR", "MTR", "港鐵"), img: "https://placehold.co/300x200/E91E63/FFF?text=Che+Kung" },
+                { time: "15:45", title: t("สำนักชีฉีหลิน & สวน Nan Lian", "Chi Lin Nunnery & Nan Lian Garden", "志蓮淨苑及南蓮園池"), desc: t("เดินชมสถาปัตยกรรมไม้ (ฟรี)", "Wooden architecture (Free)", "木造建築 (免費)"), travel: t("MTR", "MTR", "港鐵"), img: "https://placehold.co/300x200/8BC34A/FFF?text=Chi+Lin" },
+                { time: "17:00", title: t("วัดหวังต้าเซียน", "Wong Tai Sin Temple", "黃大仙祠"), desc: t("ขอพรสุขภาพและผูกด้ายแดง", "Pray for health & love", "祈求健康及姻緣"), travel: t("MTR", "MTR", "港鐵"), img: "https://placehold.co/300x200/F44336/FFF?text=Wong+Tai+Sin" },
+                { time: "18:30", title: t("มื้อเย็น: One Dim Sum (Mong Kok)", "Dinner: One Dim Sum", "晚餐：一點心"), desc: t("ติ่มซำและช้อปปิ้ง", "Dim sum and shopping", "點心及購物"), travel: t("MTR", "MTR", "港鐵"), img: "https://placehold.co/300x200/795548/FFF?text=Dim+Sum" }
             ],
             day3: [
-                { time: "09:00", title: "ไหว้พระวัดแชกงหมิว (Che Kung Temple) 🎐", desc: "หมุนกังหันนำโชค ขอพรให้ครอบครัวสุขภาพแข็งแรง", travel: "MTR สถานี Tai Wai ทางออก B", img: "https://placehold.co/300x200/E91E63/FFF?text=Che+Kung+Temple" },
-                { time: "11:30", title: "กระเช้า Ngong Ping 360 & พระใหญ่ 🚡", desc: "นั่งกระเช้าพื้นใส (Crystal Cabin) ไปไหว้พระใหญ่เทียนถาน", travel: "MTR สถานี Tung Chung", img: "https://placehold.co/300x200/00BCD4/FFF?text=Ngong+Ping" },
-                { time: "16:00", title: "ช้อปปิ้ง Citygate Outlets 🛍️", desc: "ละลายทรัพย์แบรนด์เนมลดราคาก่อนกลับเข้าเมือง", travel: "เดินจากสถานีกระเช้า Tung Chung", img: "https://placehold.co/300x200/FFC107/000?text=Citygate" },
-                { time: "20:00", title: "มื้อเย็น: ชาบูสไตล์ฮ่องกง 🍲", desc: "จัดเต็มชาบูหม้อไฟ ซุปหมาล่า/ซุปกระดูกหมู", travel: "MTR กลับมาย่าน Tsim Sha Tsui หรือ Mong Kok", img: "https://placehold.co/300x200/795548/FFF?text=Hot+Pot" }
+                { time: "08:00", title: t("มื้อเช้า: Delight Congee", "Breakfast: Delight Congee", "早餐：開心粥店"), desc: t("โจ๊กฮ่องกง (35 - 50 HKD)", "HK Congee (35 - 50 HKD)", "港式粥品 (35 - 50 HKD)"), travel: t("เดิน", "Walk", "步行"), img: "https://placehold.co/300x200/FFEA00/000?text=Breakfast" },
+                { time: "08:40", title: t("Monster Building", "Monster Building", "怪獸大廈"), desc: t("ถ่ายรูปตึกทรานสฟอร์เมอร์", "Transformers filming location", "變形金剛取景地"), travel: t("MTR", "MTR", "港鐵"), img: "https://placehold.co/300x200/607D8B/FFF?text=Monster+Bldg" },
+                { time: "10:00", title: t("นั่งรถราง Ding Ding", "Ding Ding Tram", "叮叮車"), desc: t("ชมเมืองสุดคลาสสิก", "Classic city tour", "懷舊電車遊"), travel: t("รถราง", "Tram", "電車"), img: "https://placehold.co/300x200/4CAF50/FFF?text=Ding+Ding" },
+                { time: "12:30", title: t("มื้อกลางวัน: Chukfo Taipan", "Lunch: Chukfo Taipan", "午餐：竺扶大班"), desc: t("หมูกรอบหมูแดงชื่อดัง", "Famous BBQ Pork", "著名叉燒燒肉"), travel: t("เดิน", "Walk", "步行"), img: "https://placehold.co/300x200/E91E63/FFF?text=Lunch" },
+                { time: "13:30", title: t("หาด Repulse Bay & เจ้าแม่กวนอิม", "Repulse Bay & Kwun Yam Shrine", "淺水灣及觀音廟"), desc: t("สักการะขอพร", "Pray for blessings", "參拜祈福"), travel: t("รถบัส 6X", "Bus 6X", "6X巴士"), img: "https://placehold.co/300x200/03A9F4/FFF?text=Repulse+Bay" },
+                { time: "16:00", title: t("Wan Chai (Lee Tung Ave)", "Lee Tung Avenue (Wan Chai)", "利東街 (灣仔)"), desc: t("เดินถ่ายรูป ทานมื้อเย็น", "Photo spots & Dinner", "打卡及晚餐"), travel: t("รถบัส", "Bus", "巴士"), img: "https://placehold.co/300x200/9C27B0/FFF?text=Lee+Tung+Ave" },
+                { time: "18:15", title: t("Sikh Temple Hong Kong", "Sikh Temple", "錫克教廟"), desc: t("ชมไฟฉลองเทศกาล Bandi Chhor Divas", "Bandi Chhor Divas Lights", "欣賞排燈節燈飾"), travel: t("เดิน", "Walk", "步行"), img: "https://placehold.co/300x200/FFEA00/000?text=Sikh+Temple" },
+                { time: "19:00", title: t("Winter Wonderland @ Central", "Winter Wonderland @ Central", "中環冬日藝術節"), desc: t("ต้นคริสต์มาส 22m & Light Show", "22m Xmas Tree & Light Show", "22米聖誕樹及光影秀"), travel: t("MTR / เดิน", "MTR / Walk", "港鐵 / 步行"), img: "https://placehold.co/300x200/4CAF50/FFF?text=Xmas+Tree" },
+                { time: "20:15", title: t("เรือ Star Ferry & โดรนโชว์", "Star Ferry", "天星小輪"), desc: t("ข้ามฟากชมโดรนกลับฝั่งเกาลูน", "Cross harbour back to Kowloon", "乘船返回九龍"), travel: t("เรือ + เดิน", "Ferry + Walk", "渡輪 + 步行"), img: "https://placehold.co/300x200/FFC107/000?text=Star+Ferry" }
             ],
             day4: [
-                { time: "09:00", title: "นั่งรถราง Ding Ding ชมเกาะฮ่องกง 🚋", desc: "ซึมซับบรรยากาศคลาสสิก ถ่ายรูปสไตล์สตรีท", travel: "ฝั่ง Hong Kong Island", img: "https://placehold.co/300x200/607D8B/FFF?text=Ding+Ding+Tram" },
-                { time: "11:00", title: "ขึ้น Peak Tram ไป Victoria Peak ⛰️", desc: "ชมวิวเมืองฮ่องกงมุมสูงจาก Sky Terrace 428", travel: "เดินจาก MTR Central ไปสถานี Peak Tram", img: "https://placehold.co/300x200/8BC34A/FFF?text=Victoria+Peak" },
-                { time: "15:00", title: "เก็บตกของฝากย่าน Mong Kok 👟", desc: "ซื้อขนม เครื่องสำอาง หรือรองเท้าผ้าใบให้เด็กๆ", travel: "MTR สถานี Mong Kok", img: "https://placehold.co/300x200/F44336/FFF?text=Mong+Kok" },
-                { time: "20:00", title: "เดินทางกลับสนามบินเตรียมตัวบินกลับ 🛫", desc: "บ๊ายบายฮ่องกง เจอกันใหม่ทริปหน้า!", travel: "นั่ง Airport Express กลับสนามบิน", img: "https://placehold.co/300x200/607D8B/FFF?text=Going+Home" }
+                { time: "08:30", title: t("มื้อเช้า", "Breakfast", "早餐"), desc: t("ทานอาหารเช้าใกล้โรงแรม", "Breakfast near hotel", "酒店附近吃早餐"), travel: t("เดิน", "Walk", "步行"), img: "https://placehold.co/300x200/FFEA00/000?text=Breakfast" },
+                { time: "09:45", title: t("1881 Heritage", "1881 Heritage", "1881"), desc: t("ถ่ายรูปสถาปัตยกรรม", "Architecture photography", "建築攝影"), travel: t("MTR", "MTR", "港鐵"), img: "https://placehold.co/300x200/00BCD4/FFF?text=1881" },
+                { time: "11:30", title: t("Bakehouse (Mong Kok)", "Bakehouse", "Bakehouse"), desc: t("ซื้อทาร์ตไข่กลับบ้าน", "Buy egg tarts", "購買蛋撻"), travel: t("เดิน", "Walk", "步行"), img: "https://placehold.co/300x200/FFC107/000?text=Bakehouse" },
+                { time: "12:00", title: t("มื้อกลางวัน: Master Congee", "Lunch: Master Congee", "午餐：大師傅粥品"), desc: t("ทานโจ๊กส่งท้าย", "Final congee meal", "最後一餐粥"), travel: t("เดิน", "Walk", "步行"), img: "https://placehold.co/300x200/E91E63/FFF?text=Lunch" },
+                { time: "13:30", title: t("รับกระเป๋า The City View", "Retrieve Luggage", "取回行李"), desc: t("รับของและเตรียมตัวเดินทาง", "Get bags & prepare to leave", "領取行李，準備出發"), travel: t("เดิน", "Walk", "步行"), img: "https://placehold.co/300x200/607D8B/FFF?text=Luggage" },
+                { time: "14:15", title: t("เดินทางไปสนามบินฮ่องกง", "Travel to HKIA", "前往機場"), desc: t("นั่งรถบัส", "Take bus", "乘搭巴士"), travel: t("รถบัส A21", "Bus A21", "A21巴士"), img: "https://placehold.co/300x200/8BC34A/FFF?text=Bus+A21" },
+                { time: "18:55", title: t("เที่ยวบิน TG 639", "Flight TG 639", "航班 TG 639"), desc: t("เดินทางกลับอย่างสวัสดิภาพ", "Safe flight home", "平安回家"), travel: t("เครื่องบิน", "Airplane", "飛機"), img: "https://placehold.co/300x200/2196F3/FFF?text=TG639" }
             ]
         };
 
-        // --- Initialization ---
+        const mapData = {
+            day1: { color: '#FF4B4B', points: [ { lat: 22.3080, lng: 113.9185, icon: '✈️', name: t('สนามบินฮ่องกง', 'HKIA', '香港國際機場') }, { lat: 22.3134, lng: 114.1706, icon: '🏨', name: 'The City View' }, { lat: 22.2815, lng: 114.1537, icon: '🏛️', name: t('Tai Kwun', 'Tai Kwun', '大館') }, { lat: 22.2828, lng: 114.1278, icon: '🌊', name: t('Kennedy Town', 'Kennedy Town', '堅尼地城') }, { lat: 22.2933, lng: 114.1729, icon: '✨', name: t('Symphony of Lights', 'Symphony of Lights', '幻彩詠香江') }, { lat: 22.2935, lng: 114.1702, icon: '❄️', name: t('Winter Wonderland TST', 'Winter Wonderland TST', '尖沙咀冬日藝術節') } ] },
+            day2: { color: '#4CAF50', points: [ { lat: 22.2540, lng: 113.9050, icon: '📿', name: t('วัดพระใหญ่', 'Tian Tan Buddha', '天壇大佛') }, { lat: 22.3732, lng: 114.1834, icon: '🎐', name: t('วัดแชกงหมิว', 'Che Kung Temple', '車公廟') }, { lat: 22.3400, lng: 114.2045, icon: '⛩️', name: t('สำนักชีฉีหลิน', 'Chi Lin Nunnery', '志蓮淨苑') }, { lat: 22.3427, lng: 114.1940, icon: '🏮', name: t('วัดหวังต้าเซียน', 'Wong Tai Sin Temple', '黃大仙祠') } ] },
+            day3: { color: '#00E5FF', points: [ { lat: 22.2842, lng: 114.2120, icon: '🏢', name: t('Monster Building', 'Monster Building', '怪獸大廈') }, { lat: 22.2819, lng: 114.1581, icon: '🚋', name: t('Ding Ding (Central)', 'Ding Ding', '叮叮車') }, { lat: 22.2366, lng: 114.1974, icon: '⛱️', name: t('Repulse Bay', 'Repulse Bay', '淺水灣') }, { lat: 22.2743, lng: 114.1725, icon: '🏮', name: t('Lee Tung Ave', 'Lee Tung Ave', '利東街') }, { lat: 22.2745, lng: 114.1782, icon: '🕌', name: t('Sikh Temple', 'Sikh Temple', '錫克教廟') }, { lat: 22.2810, lng: 114.1603, icon: '🎄', name: t('Statue Square (Xmas)', 'Statue Square', '皇后像廣場') }, { lat: 22.2933, lng: 114.1729, icon: '🛳️', name: t('Star Ferry', 'Star Ferry', '天星小輪') } ] },
+            day4: { color: '#9C27B0', points: [ { lat: 22.2952, lng: 114.1703, icon: '🏛️', name: t('1881 Heritage', '1881 Heritage', '1881') }, { lat: 22.3180, lng: 114.1690, icon: '🥐', name: t('Bakehouse', 'Bakehouse', 'Bakehouse') }, { lat: 22.3080, lng: 113.9185, icon: '🛫', name: t('เดินทางกลับ (HKIA)', 'Depart (HKIA)', '離境 (機場)') } ] }
+        };
+
         window.onload = () => {
             renderChecklist();
             fetchWeather();
-            renderTimeline();
             calculateBudget();
+            switchDay('day1'); // Initialize Day 1
+            initLeafletMap();  // Pre-init map
         };
 
-        // --- Checklist Logic ---
+        // --- Core UI Functions ---
         function renderChecklist() {
             const ul = document.getElementById('checklist');
             ul.innerHTML = '';
             initialChecklist.forEach((item, index) => {
                 const li = document.createElement('li');
-                li.className = "flex items-center gap-2 cursor-pointer hover:bg-gray-100 p-1 rounded";
+                li.className = "flex items-center gap-2 cursor-pointer hover:bg-gray-100 p-1 rounded font-kanit";
                 li.innerHTML = `
-                    <input type="checkbox" id="chk-${item.id}" class="w-5 h-5 accent-hkRed cursor-pointer" ${item.done ? 'checked' : ''} onchange="toggleChecklist(${index})">
-                    <label for="chk-${item.id}" class="cursor-pointer flex-1 ${item.done ? 'line-through text-gray-400' : ''}" contenteditable="true">${item.text}</label>
+                    <input type="checkbox" class="w-5 h-5 accent-hkRed cursor-pointer" ${item.done ? 'checked' : ''} onchange="toggleChecklist(${index})">
+                    <span class="flex-1 ${item.done ? 'line-through text-gray-400' : ''}" contenteditable="true">${item.text}</span>
                 `;
                 ul.appendChild(li);
             });
@@ -355,49 +974,84 @@
             renderChecklist();
         }
 
-        // --- Budget Logic ---
         function calculateBudget() {
-            const f = parseInt(document.getElementById('b-flight').value) || 0;
-            const h = parseInt(document.getElementById('b-hotel').value) || 0;
-            const fd = parseInt(document.getElementById('b-food').value) || 0;
-            const s = parseInt(document.getElementById('b-shop').value) || 0;
-            const total = f + h + fd + s;
-            document.getElementById('b-total').innerText = total.toLocaleString() + ' ฿';
-        }
-
-        // --- Weather Logic ---
-        async function fetchWeather() {
-            try {
-                // Coordinates for Hong Kong
-                const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=22.2783&longitude=114.1747&current_weather=true');
-                const data = await res.json();
-                const temp = data.current_weather.temperature;
-                const wind = data.current_weather.windspeed;
-                document.getElementById('weather-display').innerHTML = `
-                    <div class="text-4xl mb-1">${temp}°C</div>
-                    <div class="text-sm">ลมแรง ${wind} km/h</div>
-                `;
-                document.getElementById('weather-display').classList.remove('animate-pulse');
-            } catch (e) {
-                document.getElementById('weather-display').innerHTML = `<div class="text-red-500">โหลดข้อมูลสภาพอากาศไม่สำเร็จ</div>`;
+            const flight = parseInt(document.getElementById('b-flight').value) || 0;
+            const hotel = parseInt(document.getElementById('b-hotel').value) || 0;
+            const food = parseInt(document.getElementById('b-food').value) || 0;
+            const shop = parseInt(document.getElementById('b-shop').value) || 0;
+            const total = flight + hotel + food + shop;
+            
+            const totalEl = document.getElementById('b-total');
+            if(totalEl) {
+                totalEl.innerText = total.toLocaleString() + ' ฿';
             }
         }
 
-        // --- Timeline Logic ---
+        async function fetchWeather() {
+            try {
+                const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=22.2783&longitude=114.1747&current_weather=true');
+                const data = await res.json();
+                document.getElementById('weather-display').innerHTML = `
+                    <div class="text-3xl mb-1">${data.current_weather.temperature}°C</div>
+                    <div class="text-sm">${t("ลม", "Wind", "風速")} ${data.current_weather.windspeed} km/h</div>
+                `;
+                document.getElementById('weather-display').classList.remove('animate-pulse');
+            } catch (e) {
+                document.getElementById('weather-display').innerHTML = t(`ไม่สามารถโหลดข้อมูลได้`, `Failed to load data`, `無法加載數據`);
+            }
+        }
+        
+        function changeLanguage(lang) {
+            document.body.setAttribute('data-lang', lang);
+            
+            // Update placeholders dynamically
+            const newFoodInput = document.getElementById('new-food-input');
+            if (newFoodInput) {
+                if (lang === 'th') newFoodInput.placeholder = 'เพิ่มเมนูของครอบครัว...';
+                if (lang === 'en') newFoodInput.placeholder = 'Add new food...';
+                if (lang === 'yue') newFoodInput.placeholder = '新增美食...';
+            }
+        }
+
         function switchDay(day) {
             currentDay = day;
-            // Update Tab Styles
-            ['day1', 'day2', 'day3', 'day4'].forEach(d => {
+            ['day1', 'day2', 'day3', 'day4', 'map', 'food'].forEach(d => {
                 const btn = document.getElementById(`btn-${d}`);
+                if (!btn) return;
+                
                 if (d === day) {
-                    btn.classList.add('bg-hkRed', 'text-white');
+                    if(d === 'map') btn.classList.add('bg-hkNeonBlue', 'text-white');
+                    else if(d === 'food') btn.classList.add('bg-orange-500', 'text-white');
+                    else btn.classList.add('bg-hkRed', 'text-white');
+                    
                     btn.classList.remove('bg-white', 'text-black');
                 } else {
-                    btn.classList.remove('bg-hkRed', 'text-white');
+                    btn.classList.remove('bg-hkRed', 'bg-hkNeonBlue', 'bg-orange-500', 'text-white');
                     btn.classList.add('bg-white', 'text-black');
                 }
             });
-            renderTimeline();
+
+            if (day === 'map') {
+                document.getElementById('timeline-wrapper').classList.add('hidden');
+                document.getElementById('food-wrapper').classList.add('hidden');
+                document.getElementById('map-wrapper').classList.remove('hidden');
+                document.getElementById('edit-hint').classList.add('hidden');
+                // The crucial fix: Force Leaflet to recalculate size when unhidden
+                setTimeout(() => {
+                    if (advMap) advMap.invalidateSize();
+                }, 100);
+            } else if (day === 'food') {
+                document.getElementById('timeline-wrapper').classList.add('hidden');
+                document.getElementById('map-wrapper').classList.add('hidden');
+                document.getElementById('food-wrapper').classList.remove('hidden');
+                document.getElementById('edit-hint').classList.add('hidden');
+            } else {
+                document.getElementById('timeline-wrapper').classList.remove('hidden');
+                document.getElementById('map-wrapper').classList.add('hidden');
+                document.getElementById('food-wrapper').classList.add('hidden');
+                document.getElementById('edit-hint').classList.remove('hidden');
+                renderTimeline();
+            }
         }
 
         function renderTimeline() {
@@ -408,28 +1062,20 @@
             
             items.forEach((item, index) => {
                 const dotColor = index === items.length - 1 ? 'bg-hkRed' : 'bg-black';
-                
                 const itemHTML = `
                     <div class="relative flex flex-col sm:flex-row gap-4 group">
-                        <!-- Timeline Dot -->
-                        <div class="absolute -left-12 sm:-left-16 top-1 w-6 h-6 rounded-full border-4 border-white ${dotColor} shadow-[0_0_0_2px_#1A1A1A] z-20 flex items-center justify-center text-white text-xs font-bold"></div>
-                        
-                        <!-- Time -->
-                        <div class="font-mali font-bold text-lg text-hkRed w-20 shrink-0" contenteditable="true">
-                            ${item.time}
-                        </div>
-                        
-                        <!-- Content Card -->
-                        <div class="bg-gray-50 p-4 comic-border-sm flex-1 flex flex-col md:flex-row gap-4">
+                        <div class="absolute -left-12 sm:-left-16 top-1 w-6 h-6 rounded-full border-4 border-white ${dotColor} shadow-[0_0_0_2px_#1A1A1A] z-20"></div>
+                        <div class="font-mali font-bold text-lg text-hkRed w-20 shrink-0" contenteditable="true">${item.time}</div>
+                        <div class="bg-gray-50 p-4 comic-border flex-1 flex flex-col md:flex-row gap-4">
                             <div class="flex-1">
-                                <h3 class="font-mali font-bold text-xl mb-1" contenteditable="true">${item.title}</h3>
-                                <p class="text-gray-700 text-sm mb-2" contenteditable="true">${item.desc}</p>
-                                <div class="bg-hkNeonYellow/30 p-2 rounded border border-dashed border-yellow-600 text-sm font-medium">
-                                    <span class="text-yellow-700">🚌 การเดินทาง:</span> <span contenteditable="true">${item.travel}</span>
+                                <h3 class="font-mali font-bold text-lg sm:text-xl mb-1" contenteditable="true">${item.title}</h3>
+                                <p class="text-gray-700 text-sm mb-2 font-medium" contenteditable="true">${item.desc}</p>
+                                <div class="bg-hkNeonYellow/30 p-2 rounded border border-dashed border-yellow-600 text-sm font-bold text-yellow-800">
+                                    ${t("🚌 วิธีเดินทาง:", "🚌 Travel:", "🚌 交通:")} <span contenteditable="true">${item.travel}</span>
                                 </div>
                             </div>
                             <div class="shrink-0">
-                                <img src="${item.img}" alt="Location" class="w-full md:w-32 h-24 object-cover border-2 border-black rounded clickable-img" onclick="changeImage(this)">
+                                <img src="${item.img}" alt="Loc" class="w-full md:w-32 h-24 object-cover border-2 border-black rounded clickable-img" onclick="changeImage(this)">
                             </div>
                         </div>
                     </div>
@@ -439,152 +1085,163 @@
         }
 
         function changeImage(imgElement) {
-            const newUrl = prompt("ใส่ URL รูปภาพใหม่ (หรือกด Cancel เพื่อยกเลิก):", imgElement.src);
-            if (newUrl) {
-                imgElement.src = newUrl;
-            }
+            const newUrl = prompt("ใส่ URL รูปภาพใหม่:", imgElement.src);
+            if (newUrl) imgElement.src = newUrl;
         }
 
         function addPlan() {
-            const items = itineraryData[currentDay];
-            let lastTime = "12:00";
-            if (items.length > 0) {
-                lastTime = items[items.length - 1].time;
-            }
-            
-            // Simple simulate add 1 hour
-            let [hours, mins] = lastTime.split(':').map(Number);
-            hours = (hours + 1) % 24;
-            let newTime = `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
-
-            items.push({
-                time: newTime,
-                title: "สถานที่ใหม่ 📍",
-                desc: "เพิ่มรายละเอียดกิจกรรมที่นี่...",
-                travel: "จำลองระยะทาง: ห่างจากจุดเดิมประมาณ 30 นาที",
-                img: "https://placehold.co/300x200/cccccc/000?text=New+Spot"
+            if (!itineraryData[currentDay]) return;
+            itineraryData[currentDay].push({
+                time: "XX:XX", title: t("สถานที่ใหม่", "New Place", "新地點"), desc: t("รายละเอียด...", "Details...", "詳情..."), travel: t("การเดินทาง...", "Transport...", "交通..."), img: "https://placehold.co/300x200/cccccc/000?text=New"
             });
             renderTimeline();
         }
 
-        // --- Chatbot Logic (Gemini API) ---
-        let chatHistory = [];
-        const systemPrompt = "คุณคือ 'ไกด์อาหมวย' เป็นไกด์นำเที่ยวฮ่องกงแบบครอบครัว นิสัยน่ารัก สดใส ร่าเริง ชอบใช้ emoji ชอบแนะนำของกินและที่เที่ยวฮ่องกง พูดภาษาไทยเป็นหลัก";
+        // --- Leaflet Map Implementation ---
+        function initLeafletMap() {
+            // กำหนดขอบเขตแผนที่ให้อยู่เฉพาะพื้นที่ฮ่องกง
+            const hkBounds = L.latLngBounds([22.15, 113.83], [22.56, 114.44]);
 
-        function toggleChat() {
-            const chatWindow = document.getElementById('chat-window');
-            chatWindow.classList.toggle('hidden');
-        }
+            // Setup map
+            advMap = L.map('real-map', { 
+                zoomControl: false,
+                maxBounds: hkBounds,
+                maxBoundsViscosity: 1.0,
+                minZoom: 10
+            }).setView([22.3193, 114.1694], 11);
+            L.control.zoom({ position: 'bottomright' }).addTo(advMap);
 
-        function handleChatEnter(e) {
-            if (e.key === 'Enter') sendChat();
-        }
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+                maxZoom: 20
+            }).addTo(advMap);
 
-        async function sendChat() {
-            const inputEl = document.getElementById('chat-input');
-            const message = inputEl.value.trim();
-            if (!message) return;
+            Object.keys(mapData).forEach(dayKey => {
+                const day = mapData[dayKey];
+                const layerGroup = L.layerGroup();
+                const latlngs = [];
 
-            // Add user message to UI
-            addMessageToUI('คุณ', message, true);
-            inputEl.value = '';
+                day.points.forEach(point => {
+                    const coord = [point.lat, point.lng];
+                    latlngs.push(coord);
 
-            // Add loading indicator
-            const loadingId = 'loading-' + Date.now();
-            addMessageToUI('อาหมวย', 'กำลังคิดน้าาา...', false, loadingId);
+                    const icon = L.divIcon({
+                        className: 'custom-leaflet-icon',
+                        html: `<div style="background-color: ${day.color};" class="w-10 h-10 rounded-full flex items-center justify-center text-xl text-white border-2 border-white waypoint-pulse">${point.icon}</div>`,
+                        iconSize: [40, 40],
+                        iconAnchor: [20, 20]
+                    });
 
-            // Prepare payload for Gemini
-            chatHistory.push({ role: "user", parts: [{ text: message }] });
-            
-            const payload = {
-                contents: chatHistory,
-                systemInstruction: { parts: [{ text: systemPrompt }] }
-            };
+                    const popup = `<div class="font-kanit text-center">
+                        <div style="color:${day.color}" class="font-bold text-lg">${point.name}</div>
+                        <a href="https://www.google.com/maps/search/?api=1&query=${point.lat},${point.lng}" target="_blank" class="block mt-2 bg-hkDark text-white px-3 py-1 rounded-full text-xs hover:bg-gray-700">📍 Google Maps</a>
+                    </div>`;
 
-            const apiKey = ""; // Left empty as requested for canvas runtime
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
-
-            try {
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    L.marker(coord, { icon: icon }).bindPopup(popup).addTo(layerGroup);
                 });
-                
-                const result = await response.json();
-                
-                // Remove loading
-                const loadingEl = document.getElementById(loadingId);
-                if (loadingEl) loadingEl.remove();
 
-                if (result.candidates && result.candidates[0].content) {
-                    const reply = result.candidates[0].content.parts[0].text;
-                    addMessageToUI('อาหมวย', reply, false);
-                    chatHistory.push({ role: "model", parts: [{ text: reply }] });
-                } else {
-                    addMessageToUI('อาหมวย', 'ง่าา ขอโทษที อาหมวยสับสนนิดหน่อย ถามใหม่ได้ไหมคะ 🥺', false);
+                if (latlngs.length > 1) {
+                    L.polyline(latlngs, { color: day.color, weight: 4, dashArray: '10,10', opacity: 0.8 }).addTo(layerGroup);
                 }
-            } catch (error) {
-                const loadingEl = document.getElementById(loadingId);
-                if (loadingEl) loadingEl.remove();
-                addMessageToUI('อาหมวย', 'การเชื่อมต่อขัดข้องจ้า ลองใหม่น้า 🔌', false);
-            }
-        }
 
-        function addMessageToUI(sender, text, isUser, id = '') {
-            const chatMessages = document.getElementById('chat-messages');
-            const wrapper = document.createElement('div');
-            wrapper.className = `flex gap-2 ${isUser ? 'flex-row-reverse' : ''}`;
-            if(id) wrapper.id = id;
-
-            const avatar = isUser ? '😎' : '💁🏻‍♀️';
-            const bubbleStyle = isUser 
-                ? 'bg-hkNeonBlue text-black border-2 border-black rounded-lg rounded-tr-none' 
-                : 'bg-white border-2 border-black rounded-lg rounded-tl-none';
-
-            wrapper.innerHTML = `
-                <div class="text-2xl">${avatar}</div>
-                <div class="p-2 ${bubbleStyle} max-w-[75%] whitespace-pre-wrap">${text}</div>
-            `;
-            chatMessages.appendChild(wrapper);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        }
-
-        // --- Export Functions ---
-        
-        // Capture Screen using html2canvas
-        function captureScreen() {
-            const element = document.getElementById('capture-area');
-            // Hide edit borders temporarily
-            const editables = document.querySelectorAll('[contenteditable="true"]');
-            editables.forEach(el => el.style.outline = 'none');
-
-            html2canvas(element, { scale: 2, useCORS: true }).then(canvas => {
-                const link = document.createElement('a');
-                link.download = 'HK-Trip-2026.png';
-                link.href = canvas.toDataURL();
-                link.click();
-                
-                // Restore editables
-                editables.forEach(el => el.style.outline = '');
+                leafletLayers[dayKey] = layerGroup;
+                layerGroup.addTo(advMap);
             });
         }
 
-        // Export to PDF using html2pdf
-        function exportPDF() {
-            const element = document.getElementById('capture-area');
+        function toggleLeafletLayer(dayKey) {
+            const cb = document.getElementById(`cb-${dayKey}`);
+            const layer = leafletLayers[dayKey];
+            if (layer && advMap) {
+                if (cb.checked) advMap.addLayer(layer);
+                else advMap.removeLayer(layer);
+            }
+        }
+
+        // --- Travel Buddy Logic (Replaces Chatbot) ---
+        function toggleBuddy() { 
+            document.getElementById('buddy-window').classList.toggle('hidden'); 
+        }
+        
+        function addFoodToRoulette() {
+            const inputEl = document.getElementById('new-food-input');
+            const resultEl = document.getElementById('roulette-result');
+            const newFood = inputEl.value.trim();
             
+            if(newFood) {
+                // เพิ่มเข้าอาเรย์พร้อมใส่ span ป้องกันการแสดงรหัสเมื่อหมุน
+                rouletteFoods.push(t('✨ ' + newFood, '✨ ' + newFood, '✨ ' + newFood));
+                inputEl.value = '';
+                
+                // แจ้งเตือนแบบไม่ใช้ alert()
+                const originalText = resultEl.innerHTML;
+                resultEl.innerHTML = t('✅ เพิ่มเมนูแล้ว!', '✅ Added!', '✅ 已新增!');
+                resultEl.classList.add('bg-green-100', 'text-green-700');
+                resultEl.classList.remove('text-blue-600', 'bg-blue-50');
+                
+                setTimeout(() => {
+                    resultEl.innerHTML = '🍜 ? 🦆';
+                    resultEl.classList.remove('bg-green-100', 'text-green-700');
+                    resultEl.classList.add('text-blue-600', 'bg-blue-50');
+                }, 1500);
+            }
+        }
+
+        function spinRoulette() {
+            const resultEl = document.getElementById('roulette-result');
+            
+            // Animation effect
+            let counter = 0;
+            const interval = setInterval(() => {
+                resultEl.innerHTML = rouletteFoods[Math.floor(Math.random() * rouletteFoods.length)];
+                counter++;
+                if (counter > 10) {
+                    clearInterval(interval);
+                    resultEl.innerHTML = rouletteFoods[Math.floor(Math.random() * rouletteFoods.length)];
+                    resultEl.classList.add('bg-hkNeonYellow');
+                    setTimeout(() => resultEl.classList.remove('bg-hkNeonYellow'), 300);
+                }
+            }, 50);
+        }
+
+        function speakCantonese(phrase) {
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(phrase);
+                // พยายามใช้เสียงกวางตุ้งฮ่องกง ถ้าไม่มีในเครื่องจะพยายามใช้ภาษาจีนกลาง
+                utterance.lang = 'zh-HK'; 
+                utterance.rate = 0.85; // พูดช้าลงนิดนึงให้ฟังง่าย
+                window.speechSynthesis.speak(utterance);
+            } else {
+                alert("อุปกรณ์ของคุณไม่รองรับระบบเสียงพูด 😢");
+            }
+        }
+
+        // --- Export Functions ---
+        function captureScreen() {
+            const el = document.getElementById('capture-area');
+            const editables = document.querySelectorAll('[contenteditable="true"]');
+            editables.forEach(e => e.style.outline = 'none');
+            
+            html2canvas(el, { scale: 2, useCORS: true }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'HongKong-Adventure.png';
+                link.href = canvas.toDataURL();
+                link.click();
+                editables.forEach(e => e.style.outline = '');
+            });
+        }
+
+        function exportPDF() {
+            const el = document.getElementById('capture-area');
             const opt = {
                 margin:       10,
-                filename:     'HK-Trip-2026.pdf',
+                filename:     'HongKong-Adventure.pdf',
                 image:        { type: 'jpeg', quality: 0.98 },
                 html2canvas:  { scale: 2, useCORS: true },
                 jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
-
-            html2pdf().set(opt).from(element).save();
+            html2pdf().set(opt).from(el).save();
         }
-
     </script>
 </body>
 </html>
